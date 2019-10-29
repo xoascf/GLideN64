@@ -1020,6 +1020,97 @@ public:
 	}
 };
 
+#define USE_HYBRID_FILTER
+#ifdef USE_HYBRID_FILTER
+static
+std::string const& getHybridTextureFilter()
+{
+	static std::string strFilter =
+		"vec2 norm2denorm(vec2 uv, ivec2 texture_size)                                      \n"
+		"{                                                                                  \n"
+		"       return uv * texture_size - 0.5f;                                            \n"
+		"}                                                                                  \n"
+		"ivec2 denorm2idx(vec2 d_uv)                                                        \n"
+		"{                                                                                  \n"
+		"       return ivec2(floor(d_uv));                                                  \n"
+		"}                                                                                  \n"
+		"ivec2 norm2idx(vec2 uv, ivec2 texture_size)                                        \n"
+		"{                                                                                  \n"
+		"       return denorm2idx(norm2denorm(uv, texture_size));                           \n"
+		"}                                                                                  \n"
+		"vec2 idx2norm(ivec2 idx, ivec2 texture_size)                                       \n"
+		"{                                                                                  \n"
+		"       vec2 denorm_uv = vec2(idx) + 0.5f;                                          \n"
+		"       return denorm_uv / texture_size;                                            \n"
+		"}                                                                                  \n"
+		"vec4 texel_fetch(sampler2D tex, ivec2 idx, ivec2 texture_size)                     \n"
+		"{                                                                                  \n"
+		"       vec2 uv = idx2norm(idx, texture_size);                                      \n"
+		"       return texture(tex, uv);                                                    \n"
+		"}                                                                                  \n"
+		"vec4 texture2D_bilinear(sampler2D tex, vec2 uv)                                    \n"
+		"{                                                                                  \n"
+		"       ivec2 texSize = textureSize(tex,0);																\n"
+		"       vec2 denorm_uv = norm2denorm(uv,texSize);                                           \n"
+		"       ivec2 idx_low = denorm2idx(denorm_uv);                                      \n"
+		"       vec2 ratio = denorm_uv - idx_low;                                           \n"
+		"       ivec2 rounded_idx = idx_low + ivec2(step(0.5f, ratio));                     \n"
+		"                                                                                   \n"
+		"       ivec2 idx00 = idx_low;                                                      \n"
+		"       vec4 t00 = texel_fetch(tex, idx00, texSize);                                         \n"
+		"                                                                                   \n"
+		"       ivec2 idx01 = idx00 + ivec2(0, 1);                                          \n"
+		"       vec4 t01 = texel_fetch(tex, idx01, texSize);                                         \n"
+		"                                                                                   \n"
+		"       ivec2 idx10 = idx00 + ivec2(1, 0);                                          \n"
+		"       vec4 t10 = texel_fetch(tex, idx10, texSize);                                                 \n"
+		"                                                                                           \n"
+		"       ivec2 idx11 = idx00 + ivec2(1, 1);                                                  \n"
+		"       vec4 t11 = texel_fetch(tex, idx11, texSize);                                                 \n"
+		"                                                                                           \n"
+		"       /*                                                                                  \n"
+		"       * radius is the distance from the edge where interpolation happens.               \n"
+		"       * It's calculated based on  how big a fragment is in denormalized                   \n"
+		"       * texture coordinates.                                                              \n"
+		"       *                                                                                   \n"
+		"       * E.g.: If a texel maps to 5 fragments, then each fragment is                       \n"
+		"       * 1/5 texels big. So the smooth transition should be between one and                \n"
+		"       * two fragments big, since there are enough fragments to show the full              \n"
+		"       * color of the texel.                                                               \n"
+		"       *                                                                                   \n"
+		"       * If a fragment is larger than one texel, we don't care, we're already              \n"
+		"       * sampling the wrong texels, and should be using mipmaps instead.                   \n"
+		"       */                                                                                  \n"
+		"                                                                                           \n"
+		"       // Here, fwidth() is used to estimte how much denorm_uv changes per fragment.       \n"
+		"       // But we divide it by 2, since fwidth() is adding abs(dx) + abs(dy).               \n"
+		"       vec2 fragment_size = fwidth(denorm_uv) / 2.0f;                                      \n"
+		"                                                                                           \n"
+		"       float is_frag_gt1, radius;                                                          \n"
+		"       // Do nothing if fragment is greater than 1 texel                                   \n"
+		"       // Don't make the transition more than one fragment (+/- 0.5 fragment)              \n"
+		"       is_frag_gt1 = step(1.0f, fragment_size.s);                                          \n"
+		"       radius = min(fragment_size.s, 0.5f);                                                \n"
+		"       ratio.s = ratio.s * is_frag_gt1 + smoothstep(0.5f - radius,                         \n"
+		"           0.5f + radius,	ratio.s) * (1.0 - is_frag_gt1);                                 \n"
+		"       is_frag_gt1 = step(1.0f, fragment_size.t);                                          \n"
+		"       radius = min(fragment_size.t, 0.5f);                                                \n"
+		"       ratio.t = ratio.t * is_frag_gt1 + smoothstep(0.5f - radius,                         \n"
+		"           0.5f + radius,	ratio.t) * (1.0 - is_frag_gt1);                                 \n"
+		"                                                                                           \n"
+		"       // interpolate first on S direction then on T.                                      \n"
+		"       vec4 top = mix(t00, t10, ratio.s);                                                  \n"
+		"       vec4 bottom = mix(t01, t11, ratio.s);                                               \n"
+		"       // only interpolate within texture bounds to avoid sampling black texels            \n"
+		"       float is_opaque = step(2.0f, top.a + bottom.a);                                     \n"
+		"       return mix(top, bottom, ratio.t) * is_opaque +                                      \n"
+		"           texel_fetch(tex, rounded_idx, texSize) * (1.0 - is_opaque);                     \n"
+		"}                                                                                          \n"
+		;
+	return strFilter;
+}
+#endif;
+
 class ShaderFragmentHeaderReadTex : public ShaderPart
 {
 public:
@@ -1034,6 +1125,9 @@ public:
 		if (!m_glinfo.isGLES2) {
 
 			if (g_textureConvert.useTextureFiltering()) {
+#ifdef USE_HYBRID_FILTER
+				shaderPart += getHybridTextureFilter();
+#endif
 				shaderPart += "uniform lowp int uTextureFilterMode;								\n";
 				switch (config.texture.bilinearMode + config.texture.enableHalosRemoval * 2) {
 				case BILINEAR_3POINT:
@@ -1055,91 +1149,6 @@ public:
 						;
 				break;
 				case BILINEAR_STANDARD:
-#define USE_HYBRID_FILTER
-#ifdef USE_HYBRID_FILTER
-					shaderPart +=
-						"vec2 norm2denorm(vec2 uv, ivec2 texture_size)                                      \n"
-						"{                                                                                  \n"
-						"       return uv * texture_size - 0.5f;                                            \n"
-						"}                                                                                  \n"
-						"ivec2 denorm2idx(vec2 d_uv)                                                        \n"
-						"{                                                                                  \n"
-						"       return ivec2(floor(d_uv));                                                  \n"
-						"}                                                                                  \n"
-						"ivec2 norm2idx(vec2 uv, ivec2 texture_size)                                        \n"
-						"{                                                                                  \n"
-						"       return denorm2idx(norm2denorm(uv, texture_size));                           \n"
-						"}                                                                                  \n"
-						"vec2 idx2norm(ivec2 idx, ivec2 texture_size)                                       \n"
-						"{                                                                                  \n"
-						"       vec2 denorm_uv = vec2(idx) + 0.5f;                                          \n"
-						"       return denorm_uv / texture_size;                                            \n"
-						"}                                                                                  \n"
-						"vec4 texel_fetch(sampler2D tex, ivec2 idx, ivec2 texture_size)                     \n"
-						"{                                                                                  \n"
-						"       vec2 uv = idx2norm(idx, texture_size);                                      \n"
-						"       return texture(tex, uv);                                                    \n"
-						"}                                                                                  \n"
-						"vec4 texture2D_bilinear(sampler2D tex, vec2 uv)                                    \n"
-						"{                                                                                  \n"
-						"       ivec2 texSize = textureSize(tex,0);																\n"
-						"       vec2 denorm_uv = norm2denorm(uv,texSize);                                           \n"
-						"       ivec2 idx_low = denorm2idx(denorm_uv);                                      \n"
-						"       vec2 ratio = denorm_uv - idx_low;                                           \n"
-						"       ivec2 rounded_idx = idx_low + ivec2(step(0.5f, ratio));                     \n"
-						"                                                                                   \n"
-						"       ivec2 idx00 = idx_low;                                                      \n"
-						"       vec4 t00 = texel_fetch(tex, idx00, texSize);                                         \n"
-						"                                                                                   \n"
-						"       ivec2 idx01 = idx00 + ivec2(0, 1);                                          \n"
-						"       vec4 t01 = texel_fetch(tex, idx01, texSize);                                         \n"
-						"                                                                                   \n"
-						"       ivec2 idx10 = idx00 + ivec2(1, 0);                                          \n"
-						"       vec4 t10 = texel_fetch(tex, idx10, texSize);                                                 \n"
-						"                                                                                           \n"
-						"       ivec2 idx11 = idx00 + ivec2(1, 1);                                                  \n"
-						"       vec4 t11 = texel_fetch(tex, idx11, texSize);                                                 \n"
-						"                                                                                           \n"
-						"       /*                                                                                  \n"
-						"       * radius is the distance from the edge where interpolation happens.               \n"
-						"       * It's calculated based on  how big a fragment is in denormalized                   \n"
-						"       * texture coordinates.                                                              \n"
-						"       *                                                                                   \n"
-						"       * E.g.: If a texel maps to 5 fragments, then each fragment is                       \n"
-						"       * 1/5 texels big. So the smooth transition should be between one and                \n"
-						"       * two fragments big, since there are enough fragments to show the full              \n"
-						"       * color of the texel.                                                               \n"
-						"       *                                                                                   \n"
-						"       * If a fragment is larger than one texel, we don't care, we're already              \n"
-						"       * sampling the wrong texels, and should be using mipmaps instead.                   \n"
-						"       */                                                                                  \n"
-						"                                                                                           \n"
-						"       // Here, fwidth() is used to estimte how much denorm_uv changes per fragment.       \n"
-						"       // But we divide it by 2, since fwidth() is adding abs(dx) + abs(dy).               \n"
-						"       vec2 fragment_size = fwidth(denorm_uv) / 2.0f;                                      \n"
-						"                                                                                           \n"
-						"       float is_frag_gt1, radius;                                                          \n"
-						"       // Do nothing if fragment is greater than 1 texel                                   \n"
-						"       // Don't make the transition more than one fragment (+/- 0.5 fragment)              \n"
-						"       is_frag_gt1 = step(1.0f, fragment_size.s);                                          \n"
-						"       radius = min(fragment_size.s, 0.5f);                                                \n"
-						"       ratio.s = ratio.s * is_frag_gt1 + smoothstep(0.5f - radius,                         \n"
-						"           0.5f + radius,	ratio.s) * (1.0 - is_frag_gt1);                                 \n"
-						"       is_frag_gt1 = step(1.0f, fragment_size.t);                                          \n"
-						"       radius = min(fragment_size.t, 0.5f);                                                \n"
-						"       ratio.t = ratio.t * is_frag_gt1 + smoothstep(0.5f - radius,                         \n"
-						"           0.5f + radius,	ratio.t) * (1.0 - is_frag_gt1);                                 \n"
-						"                                                                                           \n"
-						"       // interpolate first on S direction then on T.                                      \n"
-						"       vec4 top = mix(t00, t10, ratio.s);                                                  \n"
-						"       vec4 bottom = mix(t01, t11, ratio.s);                                               \n"
-						"       // only interpolate within texture bounds to avoid sampling black texels            \n"
-						"       float is_opaque = step(2.0f, top.a + bottom.a);                                     \n"
-						"       return mix(top, bottom, ratio.t) * is_opaque +                                      \n"
-						"           texel_fetch(tex, rounded_idx, texSize) * (1.0 - is_opaque);                     \n"
-						"}                                                                                          \n"
-						;
-#else
 					shaderPart +=
 						"#define TEX_OFFSET(off, tex, texCoord) texture(tex, texCoord - (off)/texSize)									\n"
 						"#define TEX_FILTER(name, tex, texCoord)																		\\\n"
@@ -1161,7 +1170,6 @@ public:
 						"  name = mix( pInterp_q0, pInterp_q1, interpolationFactor.y ); 												\\\n" // Interpolate in Y direction.
 						"}																												\n"
 						;
-#endif
 				break;
 				case BILINEAR_3POINT_WITH_COLOR_BLEEDING:
 					// 3 point texture filtering.
@@ -1249,9 +1257,12 @@ public:
 					"    mediump ivec2 coord = ivec2(gl_FragCoord.xy);					\\\n"
 					"    name = texelFetch(tex, coord, 0);								\\\n"
 					"  } else {															\\\n"
-					//"    if (uTextureFilterMode == 0) name = texture(tex, texCoord);	\\\n"
-					//"    else TEX_FILTER(name, tex, texCoord);			 				\\\n"
-					"    name = texture2D_bilinear(tex, texCoord); \\\n"
+#ifdef USE_HYBRID_FILTER
+					"    if (uTextureFilterMode == 0) name = texture2D_bilinear(tex, texCoord); \\\n"
+#else
+					"    if (uTextureFilterMode == 0) name = texture(tex, texCoord);	\\\n"
+#endif
+					"    else TEX_FILTER(name, tex, texCoord);			 				\\\n"
 					"  }																\\\n"
 					"  if (fbMonochrome == 1) name = vec4(name.r);						\\\n"
 					"  else if (fbMonochrome == 2) 										\\\n"
@@ -1324,14 +1335,21 @@ public:
 	ShaderFragmentHeaderReadTexCopyMode (const opengl::GLInfo & _glinfo)
 	{
 		if (!_glinfo.isGLES2) {
-			m_part =
+#ifdef USE_HYBRID_FILTER
+			m_part = getHybridTextureFilter();
+#endif
+			m_part +=
 				"#define READ_TEX(name, tex, texCoord, fbMonochrome, fbFixedAlpha)	\\\n"
 				"  {																\\\n"
 				"  if (fbMonochrome == 3) {											\\\n"
 				"    mediump ivec2 coord = ivec2(gl_FragCoord.xy);					\\\n"
 				"    name = texelFetch(tex, coord, 0);								\\\n"
 				"  } else {															\\\n"
+#ifdef USE_HYBRID_FILTER
+				"    name = texture2D_bilinear(tex, texCoord);									\\\n"
+#else
 				"    name = texture(tex, texCoord);									\\\n"
+#endif
 				"  }																\\\n"
 				"  if (fbMonochrome == 1) name = vec4(name.r);						\\\n"
 				"  else if (fbMonochrome == 2) 										\\\n"
