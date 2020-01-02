@@ -1014,41 +1014,43 @@ public:
 		if (!m_glinfo.isGLES2) {
 
 			if (g_textureConvert.useTextureFiltering()) {
-				shaderPart += "uniform lowp int uTextureFilterMode;								\n";
+				shaderPart += "uniform lowp int uTextureFilterMode;															\n"
+					"#define TEX_OFFSET(off, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale)						\\\n"
+					"texture(tex, clampWrapMirror(texCoord - (off)/texSize, uTexClamp, uTexWrap, uTexMirror, uTexScale));	\n"
+				;
+
 				switch (config.texture.bilinearMode + config.texture.enableHalosRemoval * 2) {
 				case BILINEAR_3POINT:
 					// 3 point texture filtering.
 					// Original author: ArthurCarvalho
 					// GLSL implementation: twinaphex, mupen64plus-libretro project.
 					shaderPart +=
-						"#define TEX_OFFSET(off, tex, texCoord) texture(tex, texCoord - (off)/texSize)			\n"
-						"#define TEX_FILTER(name, tex, texCoord)												\\\n"
+						"#define TEX_FILTER(name, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale)	\\\n"
 						"  {																					\\\n"
 						"  mediump vec2 texSize = vec2(textureSize(tex,0));										\\\n"
 						"  mediump vec2 offset = fract(texCoord*texSize - vec2(0.5));							\\\n"
 						"  offset -= step(1.0, offset.x + offset.y);											\\\n"
-						"  lowp vec4 c0 = TEX_OFFSET(offset, tex, texCoord);									\\\n"
-						"  lowp vec4 c1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord);	\\\n"
-						"  lowp vec4 c2 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord);	\\\n"
+						"  lowp vec4 c0 = TEX_OFFSET(offset, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);									\\\n"
+						"  lowp vec4 c1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);	\\\n"
+						"  lowp vec4 c2 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);	\\\n"
 						"  name = c0 + abs(offset.x)*(c1-c0) + abs(offset.y)*(c2-c0); 							\\\n"
 						"  }																					\n"
 						;
 				break;
 				case BILINEAR_STANDARD:
 					shaderPart +=
-						"#define TEX_OFFSET(off, tex, texCoord) texture(tex, texCoord - (off)/texSize)									\n"
-						"#define TEX_FILTER(name, tex, texCoord)																		\\\n"
+						"#define TEX_FILTER(name, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale)							\\\n"
 						"{																												\\\n"
 						"  mediump vec2 texSize = vec2(textureSize(tex,0));																\\\n"
 						"  mediump vec2 offset = fract(texCoord*texSize - vec2(0.5));													\\\n"
 						"  offset -= step(1.0, offset.x + offset.y);																	\\\n"
 						"  lowp vec4 zero = vec4(0.0);																					\\\n"
 						"																												\\\n"
-						"  lowp vec4 p0q0 = TEX_OFFSET(offset, tex, texCoord);															\\\n"
-						"  lowp vec4 p1q0 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord);						\\\n"
-						"																												\\\n"
-						"  lowp vec4 p0q1 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord);						\\\n"
-						"  lowp vec4 p1q1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y - sign(offset.y)), tex, texCoord);		\\\n"
+						"  lowp vec4 p0q0 = TEX_OFFSET(offset, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);														\\\n"
+						"  lowp vec4 p1q0 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);					\\\n"
+						"																																						\\\n"
+						"  lowp vec4 p0q1 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);					\\\n"
+						"  lowp vec4 p1q1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y - sign(offset.y)), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);	\\\n"
 						"																												\\\n"
 						"  mediump vec2 interpolationFactor = abs(offset);																\\\n"
 						"  lowp vec4 pInterp_q0 = mix( p0q0, p1q0, interpolationFactor.x ); 											\\\n" // Interpolates top row in X direction.
@@ -1062,15 +1064,14 @@ public:
 					// Original author: ArthurCarvalho
 					// GLSL implementation: twinaphex, mupen64plus-libretro project.
 					shaderPart +=
-						"#define TEX_OFFSET(off, tex, texCoord) texture(tex, texCoord - (off)/texSize)									\n"
-						"#define TEX_FILTER(name, tex, texCoord)												\\\n"
+						"#define TEX_FILTER(name, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale)	\\\n"
 						"{																						\\\n"
 						"  mediump vec2 texSize = vec2(textureSize(tex,0));										\\\n"
 						"  mediump vec2 offset = fract(texCoord*texSize - vec2(0.5));							\\\n"
 						"  offset -= step(1.0, offset.x + offset.y);											\\\n"
-						"  lowp vec4 c0 = TEX_OFFSET(offset, tex, texCoord);									\\\n"
-						"  lowp vec4 c1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord);	\\\n"
-						"  lowp vec4 c2 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord);	\\\n"
+						"  lowp vec4 c0 = TEX_OFFSET(offset, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);									\\\n"
+						"  lowp vec4 c1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);	\\\n"
+						"  lowp vec4 c2 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);	\\\n"
 						"																						\\\n"
 						"  if(uEnableAlphaTest == 1 ){															\\\n" // Calculate premultiplied color values
 						"    c0.rgb *= c0.a;																	\\\n"
@@ -1085,19 +1086,18 @@ public:
 				break;
 				case BILINEAR_STANDARD_WITH_COLOR_BLEEDING_AND_PREMULTIPLIED_ALPHA:
 					shaderPart +=
-						"#define TEX_OFFSET(off, tex, texCoord) texture(tex, texCoord - (off)/texSize)									\n"
-						"#define TEX_FILTER(name, tex, texCoord)																		\\\n"
+						"#define TEX_FILTER(name, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale)							\\\n"
 						"{																												\\\n"
 						"  mediump vec2 texSize = vec2(textureSize(tex,0));																\\\n"
 						"  mediump vec2 offset = fract(texCoord*texSize - vec2(0.5));													\\\n"
 						"  offset -= step(1.0, offset.x + offset.y);																	\\\n"
 						"  lowp vec4 zero = vec4(0.0);																					\\\n"
 						"																												\\\n"
-						"  lowp vec4 p0q0 = TEX_OFFSET(offset, tex, texCoord);															\\\n"
-						"  lowp vec4 p1q0 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord);						\\\n"
-						"																												\\\n"
-						"  lowp vec4 p0q1 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord);						\\\n"
-						"  lowp vec4 p1q1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y - sign(offset.y)), tex, texCoord);		\\\n"
+						"  lowp vec4 p0q0 = TEX_OFFSET(offset, tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);															\\\n"
+						"  lowp vec4 p1q0 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);						\\\n"
+						"																																							\\\n"
+						"  lowp vec4 p0q1 = TEX_OFFSET(vec2(offset.x, offset.y - sign(offset.y)), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);						\\\n"
+						"  lowp vec4 p1q1 = TEX_OFFSET(vec2(offset.x - sign(offset.x), offset.y - sign(offset.y)), tex, texCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);		\\\n"
 						"																												\\\n"
 						"  if(uEnableAlphaTest == 1){																					\\\n" // Calculate premultiplied color values
 						"    p0q0.rgb *= p0q0.a;																						\\\n"
@@ -1137,14 +1137,15 @@ public:
 				break;
 				}
 				shaderPart +=
-					"#define READ_TEX(name, tex, texCoord, fbMonochrome, fbFixedAlpha)	\\\n"
+					"#define READ_TEX(name, tex, vTexCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale, fbMonochrome, fbFixedAlpha)	\\\n"
 					"  {																\\\n"
 					"  if (fbMonochrome == 3) {											\\\n"
 					"    mediump ivec2 coord = ivec2(gl_FragCoord.xy);					\\\n"
 					"    name = texelFetch(tex, coord, 0);								\\\n"
 					"  } else {															\\\n"
-					"    if (uTextureFilterMode == 0) name = texture(tex, texCoord);	\\\n"
-					"    else TEX_FILTER(name, tex, texCoord);			 				\\\n"
+					"    if (uTextureFilterMode == 0) {									\\\n"
+					"      name = texture(tex, clampWrapMirror(vTexCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale));	\\\n"
+					"    } else TEX_FILTER(name, tex, vTexCoord, uTexClamp, uTexWrap, uTexMirror, uTexScale);			\\\n"
 					"  }																\\\n"
 					"  if (fbMonochrome == 1) name = vec4(name.r);						\\\n"
 					"  else if (fbMonochrome == 2) 										\\\n"
@@ -1403,11 +1404,11 @@ public:
 					shaderPart =
 						"  lowp vec4 readtex0;																				\n"
 						"  if (uMSTexEnabled[0] == 0) {																		\n"
-						"    READ_TEX(readtex0, uTex0, texCoord0, uFbMonochrome[0], uFbFixedAlpha[0])						\n"
+						"    READ_TEX(readtex0, uTex0, vTexCoord0, uTexClamp0, uTexWrap0, uTexMirror0, uTexScale0, uFbMonochrome[0], uFbFixedAlpha[0])						\n"
 						"  } else readtex0 = readTexMS(uMSTex0, texCoord0, uFbMonochrome[0], uFbFixedAlpha[0]);			\n";
 				} else {
 					shaderPart = "  lowp vec4 readtex0;																		\n"
-								 "  READ_TEX(readtex0, uTex0, texCoord0, uFbMonochrome[0], uFbFixedAlpha[0])				\n";
+								 "  READ_TEX(readtex0, uTex0, vTexCoord0, uTexClamp0, uTexWrap0, uTexMirror0, uTexScale0, uFbMonochrome[0], uFbFixedAlpha[0])				\n";
 				}
 			}
 
@@ -1452,11 +1453,11 @@ public:
 					shaderPart =
 						"  lowp vec4 readtex1;																						\n"
 						"  if (uMSTexEnabled[1] == 0) {																				\n"
-						"    READ_TEX(readtex1, uTex1, texCoord1, uFbMonochrome[1], uFbFixedAlpha[1])								\n"
+						"    READ_TEX(readtex1, uTex1, vTexCoord1, uTexClamp1, uTexWrap1, uTexMirror1, uTexScale1, uFbMonochrome[1], uFbFixedAlpha[1])								\n"
 						"  } else readtex1 = readTexMS(uMSTex1, texCoord1, uFbMonochrome[1], uFbFixedAlpha[1]);					\n";
 				} else {
 					shaderPart = "  lowp vec4 readtex1;																				\n"
-								 "  READ_TEX(readtex1, uTex1, texCoord1, uFbMonochrome[1], uFbFixedAlpha[1])						\n";
+								 "  READ_TEX(readtex1, uTex1, vTexCoord1, uTexClamp1, uTexWrap1, uTexMirror1, uTexScale1, uFbMonochrome[1], uFbFixedAlpha[1])						\n";
 				}
 			}
 
