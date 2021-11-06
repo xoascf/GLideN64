@@ -1406,13 +1406,20 @@ void TextureCache::_loadAccurate(u32 _tile, CachedTexture *_pTexture)
 	if (_pTexture->max_level > 0)
 	{
 		u32 mipLevel = 0;
-		u32 texDataOffset = 8; // number of gDP.tiles
+		u32 texDataOffset = 8 * 2; // 2 texels per gDP.tile
+		f32 scales = 1.0f;
+		f32 scalet = 1.0f;
+		const gDPTile & firstTile = gDP.tiles[gSP.texture.tile + 1];
+		const f32 firstShifts = calcShiftScaleS(firstTile);
+		const f32 firstShiftt = calcShiftScaleT(firstTile);;
 
 		// Load all tiles into one 1D texture atlas.
 		while (true)
 		{
 			const u32 tileSizePacked = texDataOffset | (tmptex.width << 16) | (tmptex.height << 24);
-			m_tempTextureHolder[mipLevel] = tileSizePacked;
+			m_tempTextureHolder[mipLevel * 2] = tileSizePacked;
+			const u32 tileScalePacked = u32(scales) | (u32(scalet) << 8);
+			m_tempTextureHolder[mipLevel * 2 + 1] = tileScalePacked;
 
 			getLoadParams(tmptex.format, tmptex.size);
 			_getTextureDestData(tmptex, &m_tempTextureHolder[texDataOffset], glInternalFormat, GetTexel, &line);
@@ -1447,6 +1454,8 @@ void TextureCache::_loadAccurate(u32 _tile, CachedTexture *_pTexture)
 			tmptex.clampWidth = sizes.clampWidth;
 			tmptex.clampHeight = sizes.clampHeight;
 			_pTexture->textureBytes += (tmptex.width * tmptex.height) << sizeShift;
+			scales = firstShifts / calcShiftScaleS(mipTile);
+			scalet = firstShiftt / calcShiftScaleT(mipTile);
 		}
 
 		Context::InitTextureParams params;
