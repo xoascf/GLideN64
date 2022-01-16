@@ -5,7 +5,7 @@
 
 void F3DGOLDEN_Init();
 
-void F3D_TriX(u32 w0, u32 w1);
+void F3D_TriX(const Gwords words);
 
 #endif
 

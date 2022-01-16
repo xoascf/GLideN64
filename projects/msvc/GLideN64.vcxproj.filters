@@ -443,6 +443,9 @@
     <ClCompile Include="..\..\src\Graphics\OpenGLContext\GLSL\glsl_CombinerProgramUniformFactoryFast.cpp">
       <Filter>Source Files\Graphics\OpenGL\GLSL</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Native.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\3DMath.h">

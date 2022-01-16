@@ -25,6 +25,10 @@
 #include "VI.h"
 #include "Log.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace graphics;
 
 GraphicsDrawer::GraphicsDrawer()
@@ -78,7 +82,7 @@ void GraphicsDrawer::addTriangle(u32 _v0, u32 _v1, u32 _v2)
 		}
 		else if ((gSP.geometryMode & G_SHADING_SMOOTH) == 0) {
 			// Flat shading
-			SPVertex & vtx0 = triangles.vertices[triangles.elements[firstIndex + (((RSP.w1 >> 24) & 3) % 3)]];
+			SPVertex & vtx0 = triangles.vertices[triangles.elements[firstIndex + (((RSP.words.w1 >> 24) & 3) % 3)]];
 			for (u32 i = firstIndex; i < triangles.num; ++i) {
 				SPVertex & vtx = triangles.vertices[triangles.elements[i]];
 				vtx.r = vtx.flat_r = vtx0.r;
@@ -888,7 +892,7 @@ void GraphicsDrawer::_drawThickLine(u32 _v0, u32 _v1, float _width)
 		}
 		else if ((gSP.geometryMode & G_SHADING_SMOOTH) == 0) {
 			// Flat shading
-			SPVertex & vtx0 = triangles.vertices[_v0 + ((RSP.w1 >> 24) & 3)];
+			SPVertex & vtx0 = triangles.vertices[_v0 + ((RSP.words.w1 >> 24) & 3)];
 			SPVertex & vtx1 = triangles.vertices[_v0];
 			vtx1.r = vtx1.flat_r = vtx0.r;
 			vtx1.g = vtx1.flat_g = vtx0.g;
@@ -1104,7 +1108,11 @@ bool texturedRectDepthBufferCopy(const GraphicsDrawer::TexturedRectParams & _par
 		u16 * pSrc = reinterpret_cast<u16*>(TMEM) + _params.s/32;
 		u16 *pDst = reinterpret_cast<u16*>(RDRAM + gDP.colorImage.address);
 		for (u32 x = 0; x < width; ++x)
+#ifdef NATIVE
+			pDst[(ulx + x) ^ 1] = pSrc[x];
+#else
 			pDst[(ulx + x) ^ 1] = swapword(pSrc[x]);
+#endif
 
 		return true;
 	}

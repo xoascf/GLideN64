@@ -3,16 +3,28 @@
 
 #include "Types.h"
 
+/*
+#ifdef NATIVE
+#define RDRAM_PTR(a) ((u8*)a)
+#else
+#define RDRAM_PTR(a) RDRAM[a]
+#endif
+*/
+
 #define MI_INTR_DP		0x20		// Bit 5: DP intr
 
 struct N64Regs
 {
+#ifdef NATIVE
+    N64Regs();
+    ~N64Regs();
+#endif
 	u32 *MI_INTR;
 
-	u32 *DPC_START;
-	u32 *DPC_END;
-	u32 *DPC_CURRENT;
-	u32 *DPC_STATUS;
+	word *DPC_START;
+	word *DPC_END;
+	word *DPC_CURRENT;
+	word *DPC_STATUS;
 	u32 *DPC_CLOCK;
 	u32 *DPC_BUFBUSY;
 	u32 *DPC_PIPEBUSY;
@@ -38,11 +50,17 @@ struct N64Regs
 
 extern N64Regs REG;
 extern u8 *HEADER;
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#define DMEM ((u8*)0)
+#define IMEM ((u8*)0)
+#else
 extern u8 *DMEM;
 extern u8 *IMEM;
 extern u8 *RDRAM;
+#endif
 extern u64 TMEM[512];
-extern u32 RDRAMSize;
+extern word RDRAMSize;
 extern bool ConfigOpen;
 
 #endif

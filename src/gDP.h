@@ -237,13 +237,13 @@ struct gDPInfo
 	struct
 	{
 		u32 format, size, width, bpl;
-		u32 address;
+		word address;
 	} textureImage;
 
 	struct
 	{
 		u32 format, size, width, height, bpl;
-		u32 address, changed;
+		word address, changed;
 	} colorImage;
 
 	u32	depthImageAddress;
@@ -297,9 +297,9 @@ void gDPSetPrimDepth( u16 z, u16 dz );
 void gDPSetTexturePersp( u32 enable );
 void gDPSetTextureLUT( u32 mode );
 void gDPSetCombine( u32 muxs0, u32 muxs1 );
-void gDPSetColorImage( u32 format, u32 size, u32 width, u32 address );
-void gDPSetTextureImage( u32 format, u32 size, u32 width, u32 address );
-void gDPSetDepthImage( u32 address );
+void gDPSetColorImage( u32 format, u32 size, u32 width, word address );
+void gDPSetTextureImage( u32 format, u32 size, u32 width, word address );
+void gDPSetDepthImage( word address );
 void gDPSetEnvColor( u32 r, u32 g, u32 b, u32 a );
 void gDPSetBlendColor( u32 r, u32 g, u32 b, u32 a );
 void gDPSetFogColor( u32 r, u32 g, u32 b, u32 a );
@@ -319,18 +319,18 @@ void gDPSetKeyGB(u32 cG, u32 sG, u32 wG, u32 cB, u32 sB, u32 wB );
 void gDPTextureRectangle( f32 ulx, f32 uly, f32 lrx, f32 lry, s32 tile, s16 s, s16 t, f32 dsdx, f32 dtdy, bool flip );
 void gDPFullSync();
 void gDPTileSync();
-void gDPPipeSync();
+void gDPPipeSync(const Gwords words);
 void gDPLoadSync();
-void gDPNoOp();
+void gDPNoOp(const Gwords words);
 
-void gDPTriFill( u32 w0, u32 w1 );
-void gDPTriShade( u32 w0, u32 w1 );
-void gDPTriTxtr( u32 w0, u32 w1 );
-void gDPTriShadeTxtr( u32 w0, u32 w1 );
-void gDPTriFillZ( u32 w0, u32 w1 );
-void gDPTriShadeZ( u32 w0, u32 w1 );
-void gDPTriTxtrZ( u32 w0, u32 w1 );
-void gDPTriShadeTxtrZ( u32 w0, u32 w1 );
+void gDPTriFill( word w0, word w1 );
+void gDPTriShade( word w0, word w1 );
+void gDPTriTxtr( word w0, word w1 );
+void gDPTriShadeTxtr( word w0, word w1 );
+void gDPTriFillZ( word w0, word w1 );
+void gDPTriShadeZ( word w0, word w1 );
+void gDPTriTxtrZ( word w0, word w1 );
+void gDPTriShadeTxtrZ( word w0, word w1 );
 
 bool isCurrentColorImageDepthImage();
 bool isDepthCompareEnabled();

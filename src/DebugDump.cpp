@@ -56,6 +56,9 @@ BufferedLog::~BufferedLog()
 void BufferedLog::print(const char* _message)
 {
 	m_log << _message;
+#ifdef _MSC_VER
+    OutputDebugStringA(_message);
+#endif
 }
 
 bool BufferedLog::needPrint(u32 _mode) const

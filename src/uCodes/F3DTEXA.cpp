@@ -12,18 +12,18 @@
 
 u32 G_TEXA_LOADTEX, G_TEXA_SETTILESIZE;
 
-void F3DTTEXA_LoadTex(u32 w0, u32 w1)
+void F3DTTEXA_LoadTex(const Gwords words)
 {
-	RDP_SetTImg(0x3d100000, w1);
-	RDP_SetTile(0x35100000, 0x07000000);
-	RDP_LoadBlock(0x33000000, 0x27000000 | _SHIFTR(w0, 0, 24));
+	RDP_SetTImg(Gwords(0x3d100000, words.w1));
+	RDP_SetTile(Gwords(0x35100000, 0x07000000));
+	RDP_LoadBlock(Gwords(0x33000000, 0x27000000 | _SHIFTR(words.w0, 0, 24)));
 }
 
-void F3DTTEXA_SetTileSize(u32 w0, u32 w1)
+void F3DTTEXA_SetTileSize(const Gwords words)
 {
-	const u32 firstHalf = _SHIFTL(_SHIFTR(w1, 24, 8), 9, 8);
-	RDP_SetTile(0x35400000 | firstHalf, _SHIFTR(w0, 0, 24));
-	RDP_SetTileSize(0x32000000, _SHIFTR(w1, 0, 24));
+	const u32 firstHalf = _SHIFTL(_SHIFTR(words.w1, 24, 8), 9, 8);
+	RDP_SetTile(Gwords(0x35400000 | firstHalf, _SHIFTR(words.w0, 0, 24)));
+	RDP_SetTileSize(Gwords(0x32000000, _SHIFTR(words.w1, 0, 24)));
 }
 
 void F3DTEXA_Init()

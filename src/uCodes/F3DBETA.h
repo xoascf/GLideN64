@@ -8,7 +8,7 @@
 
 void F3DBETA_Init();
 
-void F3DBETA_Perpnorm(u32 w0, u32 w1);
+void F3DBETA_Perpnorm(const Gwords words);
 
 #endif
 

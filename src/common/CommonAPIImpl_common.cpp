@@ -157,7 +157,9 @@ void PluginAPI::ProcessDList()
 #ifdef RSPTHREAD
 	_callAPICommand(ProcessDListCommand());
 #else
+#ifndef NATIVE
 	RSP_ProcessDList();
+#endif
 #endif
 }
 
@@ -196,7 +198,7 @@ void PluginAPI::RomClosed()
 	osal_keys_quit();
 }
 
-int PluginAPI::RomOpen()
+int PluginAPI::RomOpen(const char* romName)
 {
 	osal_keys_init();
 
@@ -208,7 +210,8 @@ int PluginAPI::RomOpen()
 	m_pluginThreadCv.wait(m_pluginThreadMtx);
 	m_pluginThreadMtx.unlock();
 #else
-	RSP_Init();
+
+	RSP_Init(romName);
 	GBI.init();
 	Config_LoadConfig();
 	if (!dwnd().start())
@@ -236,10 +239,12 @@ void PluginAPI::UpdateScreen()
 }
 
 void PluginAPI::_initiateGFX(const GFX_INFO & _gfxInfo) const {
-	HEADER = _gfxInfo.HEADER;
+#ifndef NATIVE
+    HEADER = _gfxInfo.HEADER;
 	DMEM = _gfxInfo.DMEM;
 	IMEM = _gfxInfo.IMEM;
 	RDRAM = _gfxInfo.RDRAM;
+#endif
 
 	REG.MI_INTR = _gfxInfo.MI_INTR_REG;
 	REG.DPC_START = _gfxInfo.DPC_START_REG;

@@ -175,6 +175,7 @@ bool DisplayWindowWindows::_resizeWindow()
 		m_heightOffset = 0;
 		_setBufferSize();
 
+		return true;
 		return (SetWindowPos(hWnd, NULL, 0, 0, m_screenWidth, m_screenHeight, SWP_NOACTIVATE | SWP_NOZORDER | SWP_SHOWWINDOW) == TRUE);
 	} else {
 		m_screenWidth = m_width = config.video.windowedWidth;
@@ -193,6 +194,7 @@ bool DisplayWindowWindows::_resizeWindow()
 		windowRect.right = windowRect.left + config.video.windowedWidth - 1;
 		windowRect.bottom = windowRect.top + config.video.windowedHeight - 1 + m_heightOffset;
 
+		return true;
 		AdjustWindowRect( &windowRect, GetWindowLong( hWnd, GWL_STYLE ), GetMenu( hWnd ) != NULL );
 
 		return (SetWindowPos( hWnd, NULL, 0, 0, windowRect.right - windowRect.left + 1,

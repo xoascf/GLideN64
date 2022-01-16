@@ -66,31 +66,31 @@
 #define F3D_RDPHALF_CONT		0xB2
 #define F3D_TRI4				0xB1
 
-void F3D_SPNoOp( u32 w0, u32 w1 );
-void F3D_Mtx( u32 w0, u32 w1 );
-void F3D_Reserved0( u32 w0, u32 w1 );
-void F3D_MoveMem( u32 w0, u32 w1 );
-void F3D_Vtx( u32 w0, u32 w1 );
-void F3D_Reserved1( u32 w0, u32 w1 );
-void F3D_DList( u32 w0, u32 w1 );
-void F3D_Reserved2( u32 w0, u32 w1 );
-void F3D_Reserved3( u32 w0, u32 w1 );
-void F3D_Sprite2D_Base( u32 w0, u32 w1 );
-void F3D_Tri1( u32 w0, u32 w1 );
-void F3D_CullDL( u32 w0, u32 w1 );
-void F3D_PopMtx( u32 w0, u32 w1 );
-void F3D_MoveWord( u32 w0, u32 w1 );
-void F3D_Texture( u32 w0, u32 w1 );
-void F3D_SetOtherMode_H( u32 w0, u32 w1 );
-void F3D_SetOtherMode_L( u32 w0, u32 w1 );
-void F3D_EndDL( u32 w0, u32 w1 );
-void F3D_SetGeometryMode( u32 w0, u32 w1 );
-void F3D_ClearGeometryMode( u32 w0, u32 w1 );
-//void F3D_Line3D( u32 w0, u32 w1 );
-void F3D_Quad( u32 w0, u32 w1 );
-void F3D_RDPHalf_1( u32 w0, u32 w1 );
-void F3D_RDPHalf_2( u32 w0, u32 w1 );
-void F3D_RDPHalf_Cont( u32 w0, u32 w1 );
+void F3D_SPNoOp( const Gwords words );
+void F3D_Mtx( const Gwords words );
+void F3D_Reserved0( const Gwords words );
+void F3D_MoveMem( const Gwords words );
+void F3D_Vtx( const Gwords words );
+void F3D_Reserved1( const Gwords words );
+void F3D_DList( const Gwords words );
+void F3D_Reserved2( const Gwords words );
+void F3D_Reserved3( const Gwords words );
+void F3D_Sprite2D_Base( const Gwords words );
+void F3D_Tri1( const Gwords words );
+void F3D_CullDL( const Gwords words );
+void F3D_PopMtx( const Gwords words );
+void F3D_MoveWord( const Gwords words );
+void F3D_Texture( const Gwords words );
+void F3D_SetOtherMode_H( const Gwords words );
+void F3D_SetOtherMode_L( const Gwords words );
+void F3D_EndDL( const Gwords words );
+void F3D_SetGeometryMode( const Gwords words );
+void F3D_ClearGeometryMode( const Gwords words );
+//void F3D_Line3D( const Gwords words );
+void F3D_Quad( const Gwords words );
+void F3D_RDPHalf_1( const Gwords words );
+void F3D_RDPHalf_2( const Gwords words );
+void F3D_RDPHalf_Cont( const Gwords words );
 void F3D_Init();
 #endif
 

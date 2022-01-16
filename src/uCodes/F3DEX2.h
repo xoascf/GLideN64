@@ -66,23 +66,23 @@
 #define F3DEX2_LINE3D			0x08
 
 
-void F3DEX2_Mtx( u32 w0, u32 w1 );
-void F3DEX2_MoveMem( u32 w0, u32 w1 );
-void F3DEX2_Vtx( u32 w0, u32 w1 );
-void F3DEX2_Reserved1( u32 w0, u32 w1 );
-void F3DEX2_Tri1( u32 w0, u32 w1 );
-void F3DEX2_PopMtx( u32 w0, u32 w1 );
-void F3DEX2_MoveWord( u32 w0, u32 w1 );
-void F3DEX2_Texture( u32 w0, u32 w1 );
-void F3DEX2_SetOtherMode_H( u32 w0, u32 w1 );
-void F3DEX2_SetOtherMode_L( u32 w0, u32 w1 );
-void F3DEX2_GeometryMode( u32 w0, u32 w1 );
-void F3DEX2_Line3D( u32 w0, u32 w1 );
-void F3DEX2_DMAIO( u32 w0, u32 w1 );
-void F3DEX2_Special_1( u32 w0, u32 w1 );
-void F3DEX2_Special_2( u32 w0, u32 w1 );
-void F3DEX2_Special_3( u32 w0, u32 w1 );
-void F3DEX2_Quad( u32 w0, u32 w1 );
+void F3DEX2_Mtx( const Gwords words );
+void F3DEX2_MoveMem( const Gwords words );
+void F3DEX2_Vtx( const Gwords words );
+void F3DEX2_Reserved1( const Gwords words );
+void F3DEX2_Tri1( const Gwords words );
+void F3DEX2_PopMtx( const Gwords words );
+void F3DEX2_MoveWord( const Gwords words );
+void F3DEX2_Texture( const Gwords words );
+void F3DEX2_SetOtherMode_H( const Gwords words );
+void F3DEX2_SetOtherMode_L( const Gwords words );
+void F3DEX2_GeometryMode( const Gwords words );
+void F3DEX2_Line3D( const Gwords words );
+void F3DEX2_DMAIO( const Gwords words );
+void F3DEX2_Special_1( const Gwords words );
+void F3DEX2_Special_2( const Gwords words );
+void F3DEX2_Special_3( const Gwords words );
+void F3DEX2_Quad( const Gwords words );
 void F3DEX2_Init();
 #endif
 

@@ -33,25 +33,25 @@ struct ZSORTRDP
 	f32 view_trans[2];
 } zSortRdp = {{0, 0}, {0, 0}};
 
-void ZSort_RDPCMD( u32, u32 _w1 )
+void ZSort_RDPCMD( const Gwords words )
 {
-	u32 addr = RSP_SegmentToPhysical(_w1) >> 2;
+	word addr = RSP_SegmentToPhysical(words.w1) >> 2;
 	if (addr) {
 		RSP.LLE = true;
 		while(true)
 		{
-			u32 w0 = ((u32*)RDRAM)[addr++];
+			word w0 = ((word*)RDRAM)[addr++];
 			RSP.cmd = _SHIFTR( w0, 24, 8 );
 			if (RSP.cmd == 0xDF)
 				break;
-			u32 w1 = ((u32*)RDRAM)[addr++];
+			word w1 = ((word*)RDRAM)[addr++];
 			if (RSP.cmd == G_TEXRECT || RSP.cmd == G_TEXRECTFLIP) {
 				addr++;
-				RDP.w2 = ((u32*)RDRAM)[addr++];
+				RDP.w2 = ((word*)RDRAM)[addr++];
 				addr++;
-				RDP.w3 = ((u32*)RDRAM)[addr++];
+				RDP.w3 = ((word*)RDRAM)[addr++];
 			}
-			GBI.cmd[RSP.cmd]( w0, w1 );
+			GBI.cmd[RSP.cmd]( words );
 		};
 		RSP.LLE = false;
 	}
@@ -138,7 +138,7 @@ u32 ZSort_LoadObject (u32 _zHeader, u32 * _pRdpCmds)
 		w1 = ((u32*)addr)[1];
 		if (w1 != _pRdpCmds[0]) {
 			_pRdpCmds[0] = w1;
-			ZSort_RDPCMD (0, w1);
+			ZSort_RDPCMD (Gwords(0, w1));
 		}
 		ZSort_DrawObject(addr + 8, type);
 	}
@@ -150,16 +150,16 @@ u32 ZSort_LoadObject (u32 _zHeader, u32 * _pRdpCmds)
 		w1 = ((u32*)addr)[1];
 		if (w1 != _pRdpCmds[0]) {
 			_pRdpCmds[0] = w1;
-			ZSort_RDPCMD (0, w1);
+			ZSort_RDPCMD (Gwords(0, w1));
 		}
 		w1 = ((u32*)addr)[2];
 		if (w1 != _pRdpCmds[1]) {
-			ZSort_RDPCMD (0, w1);
+			ZSort_RDPCMD (Gwords(0, w1));
 			_pRdpCmds[1] = w1;
 		}
 		w1 = ((u32*)addr)[3];
 		if (w1 != _pRdpCmds[2]) {
-			ZSort_RDPCMD (0,  w1);
+			ZSort_RDPCMD (Gwords(0,  w1));
 			_pRdpCmds[2] = w1;
 		}
 		if (type != 0) {
@@ -171,11 +171,11 @@ u32 ZSort_LoadObject (u32 _zHeader, u32 * _pRdpCmds)
 	return RSP_SegmentToPhysical(((u32*)addr)[0]);
 }
 
-void ZSort_Obj( u32 _w0, u32 _w1 )
+void ZSort_Obj( const Gwords words )
 {
 	u32 rdpcmds[3] = {0, 0, 0};
-	u32 cmd1 = _w1;
-	u32 zHeader = RSP_SegmentToPhysical(_w0);
+	u32 cmd1 = words.w1;
+	u32 zHeader = RSP_SegmentToPhysical(words.w0);
 	while (zHeader)
 		zHeader = ZSort_LoadObject(zHeader, rdpcmds);
 	zHeader = RSP_SegmentToPhysical(cmd1);
@@ -183,16 +183,16 @@ void ZSort_Obj( u32 _w0, u32 _w1 )
 		zHeader = ZSort_LoadObject(zHeader, rdpcmds);
 }
 
-void ZSort_Interpolate( u32, u32 )
+void ZSort_Interpolate( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_Interpolate Ignored");
 }
 
-void ZSort_XFMLight( u32 _w0, u32 _w1 )
+void ZSort_XFMLight( const Gwords words )
 {
-	int mid = _SHIFTR(_w0, 0, 8);
-	gSPNumLights(1 + _SHIFTR(_w1, 12, 8));
-	u32 addr = -1024 + _SHIFTR(_w1, 0, 12);
+	int mid = _SHIFTR(words.w0, 0, 8);
+	gSPNumLights(1 + _SHIFTR(words.w1, 12, 8));
+	word addr = -1024 + _SHIFTR(words.w1, 0, 12);
 
 	assert(mid == GZM_MMTX);
 /*
@@ -236,19 +236,19 @@ void ZSort_XFMLight( u32 _w0, u32 _w1 )
 	}
 }
 
-void ZSort_LightingL( u32, u32 )
+void ZSort_LightingL( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_LightingL Ignored");
 }
 
 
-void ZSort_Lighting( u32 _w0, u32 _w1 )
+void ZSort_Lighting( const Gwords words )
 {
-	u32 csrs = -1024 + _SHIFTR(_w0, 12, 12);
-	u32 nsrs = -1024 + _SHIFTR(_w0, 0, 12);
-	u32 num = 1 + _SHIFTR(_w1, 24, 8);
-	u32 cdest = -1024 + _SHIFTR(_w1, 12, 12);
-	u32 tdest = -1024 + _SHIFTR(_w1, 0, 12);
+	u32 csrs = -1024 + _SHIFTR(words.w0, 12, 12);
+	u32 nsrs = -1024 + _SHIFTR(words.w0, 0, 12);
+	u32 num = 1 + _SHIFTR(words.w1, 24, 8);
+	u32 cdest = -1024 + _SHIFTR(words.w1, 12, 12);
+	u32 tdest = -1024 + _SHIFTR(words.w1, 0, 12);
 	int use_material = (csrs != 0x0ff0);
 	tdest >>= 1;
 	GraphicsDrawer & drawer = dwnd().getDrawer();
@@ -292,18 +292,18 @@ void ZSort_Lighting( u32 _w0, u32 _w1 )
 	}
 }
 
-void ZSort_MTXRNSP( u32, u32 )
+void ZSort_MTXRNSP( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_MTXRNSP Ignored");
 }
 
-void ZSort_MTXCAT(u32 _w0, u32 _w1)
+void ZSort_MTXCAT( const Gwords words )
 {
 	M44 *s = nullptr;
 	M44 *t = nullptr;
-	u32 S = _SHIFTR(_w0, 0, 4);
-	u32 T = _SHIFTR(_w1, 16, 4);
-	u32 D = _SHIFTR(_w1, 0, 4);
+	u32 S = _SHIFTR(words.w0, 0, 4);
+	u32 T = _SHIFTR(words.w1, 16, 4);
+	u32 D = _SHIFTR(words.w1, 0, 4);
 	switch (S) {
 	case GZM_MMTX:
 		s = (M44*)gSP.matrix.modelView[gSP.matrix.modelViewi];
@@ -343,11 +343,11 @@ void ZSort_MTXCAT(u32 _w0, u32 _w1)
 	}
 }
 
-void ZSort_MultMPMTX( u32 _w0, u32 _w1 )
+void ZSort_MultMPMTX( const Gwords words )
 {
-	int num = 1 + _SHIFTR(_w1, 24, 8);
-	int src = -1024 + _SHIFTR(_w1, 12, 12);
-	int dst = -1024 + _SHIFTR(_w1, 0, 12);
+	int num = 1 + _SHIFTR(words.w1, 24, 8);
+	int src = -1024 + _SHIFTR(words.w1, 12, 12);
+	int dst = -1024 + _SHIFTR(words.w1, 0, 12);
 	s16 * saddr = (s16*)(DMEM+src);
 	zSortVDest * daddr = (zSortVDest*)(DMEM+dst);
 	int idx = 0;
@@ -389,22 +389,22 @@ void ZSort_MultMPMTX( u32 _w0, u32 _w1 )
 	}
 }
 
-void ZSort_LinkSubDL( u32, u32 )
+void ZSort_LinkSubDL( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_LinkSubDL Ignored");
 }
 
-void ZSort_SetSubDL( u32, u32 )
+void ZSort_SetSubDL( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_SetSubDL Ignored");
 }
 
-void ZSort_WaitSignal( u32, u32 )
+void ZSort_WaitSignal( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_WaitSignal Ignored");
 }
 
-void ZSort_SendSignal( u32, u32 )
+void ZSort_SendSignal( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSort_SendSignal Ignored");
 }
@@ -421,22 +421,22 @@ void ZSort_SetTexture()
 	gSPSetGeometryMode(G_SHADING_SMOOTH | G_SHADE);
 }
 
-void ZSort_MoveMem( u32 _w0, u32 _w1 )
+void ZSort_MoveMem( const Gwords words )
 {
-	int idx = _w0 & 0x0E;
-	int ofs = _SHIFTR(_w0, 6, 9)<<3;
-	int len = 1 + (_SHIFTR(_w0, 15, 9)<<3);
-	int flag = _w0 & 0x01;
-	u32 addr = RSP_SegmentToPhysical(_w1);
+	word idx = words.w0 & 0x0E;
+	word ofs = _SHIFTR(words.w0, 6, 9)<<3;
+	word len = 1 + (_SHIFTR(words.w0, 15, 9)<<3);
+	word flag = words.w0 & 0x01;
+	word addr = RSP_SegmentToPhysical(words.w1);
 	switch (idx)
 	{
 
 	case GZF_LOAD: //save/load
 		if (flag == 0) {
-			int dmem_addr = (idx<<3) + ofs;
+			word dmem_addr = (idx<<3) + ofs;
 			memcpy(DMEM + dmem_addr, RDRAM + addr, len);
 		} else {
-			int dmem_addr = (idx<<3) + ofs;
+			word dmem_addr = (idx<<3) + ofs;
 			memcpy(RDRAM + addr, DMEM + dmem_addr, len);
 		}
 	break;
@@ -504,9 +504,9 @@ void ZSort_MoveMem( u32 _w0, u32 _w1 )
 
 }
 
-void SZort_SetScissor(u32 _w0, u32 _w1)
+void SZort_SetScissor( const Gwords words )
 {
-	RDP_SetScissor(_w0, _w1);
+	RDP_SetScissor(words);
 
 	if ((gDP.scissor.lrx - gDP.scissor.ulx) > (zSortRdp.view_scale[0] - zSortRdp.view_trans[0]))
 	{

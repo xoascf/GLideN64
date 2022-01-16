@@ -36,9 +36,9 @@ namespace FBInfo {
 	}
 
 
-	void FBInfo::Write(u32 addr, u32 size)
+	void FBInfo::Write(word addr, u32 size)
 	{
-		const u32 address = RSP_SegmentToPhysical(addr);
+		const word address = RSP_SegmentToPhysical(addr);
 		const FrameBuffer* writeBuffer = frameBufferList().findBuffer(address);
 		if (writeBuffer == nullptr)
 			return;
@@ -53,9 +53,9 @@ namespace FBInfo {
 		LOG(LOG_WARNING, "FBWList size=%u", size);
 	}
 
-	void FBInfo::Read(u32 addr)
+	void FBInfo::Read(word addr)
 	{
-		const u32 address = RSP_SegmentToPhysical(addr);
+		const word address = RSP_SegmentToPhysical(addr);
 		FrameBuffer * pBuffer = frameBufferList().findBuffer(address);
 
 		if (pBuffer == nullptr || _findBuffer(m_writeBuffers, pBuffer).first)

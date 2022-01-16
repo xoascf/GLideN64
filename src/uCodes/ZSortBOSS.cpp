@@ -11,6 +11,11 @@
 #include "3DMath.h"
 #include "DisplayWindow.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#define DMEM ((u8*)0)
+#endif
+
 #define CLAMP(x, min, max) ((x > max) ? max : ((x < min) ? min: x))
 #define SATURATES8(x) ((x > 127) ? 127 : ((x < -128) ? -128: x))
 
@@ -36,7 +41,7 @@ struct ZSortBOSSState {
 
 struct ZSortBOSSState gstate;
 
-void ZSortBOSS_EndMainDL( u32, u32 )
+void ZSortBOSS_EndMainDL( const Gwords words )
 {
 	if(gstate.subdl == PROCESSED) {
 		// is this really happening?
@@ -63,7 +68,7 @@ void ZSortBOSS_EndMainDL( u32, u32 )
 	LOG(LOG_VERBOSE, "ZSortBOSS_EndMainDL");
 }
 
-void ZSortBOSS_EndSubDL( u32, u32 )
+void ZSortBOSS_EndSubDL( const Gwords words )
 {
 	if(gstate.maindl == PROCESSED) {
 		RSP.halt = true;
@@ -80,7 +85,7 @@ void ZSortBOSS_EndSubDL( u32, u32 )
 	LOG(LOG_VERBOSE, "ZSortBOSS_EndSubDL");
 }
 
-void ZSortBOSS_WaitSignal( u32 , u32 )
+void ZSortBOSS_WaitSignal( const Gwords words )
 {
 	if(!gstate.waiting_for_signal) {
 		// *REG.MI_INTR |= MI_INTR_SP;
@@ -101,26 +106,26 @@ void ZSortBOSS_WaitSignal( u32 , u32 )
 	LOG(LOG_VERBOSE, "ZSortBOSS_WaitSignal");
 }
 
-void ZSortBOSS_MoveWord( u32 _w0, u32 _w1 )
+void ZSortBOSS_MoveWord( const Gwords words )
 {
-	assert((_w0 & 3) == 0);
+	assert((words.w0 & 3) == 0);
 
-	if(((_w0 & 0xfff) == 0x10) && (RSP.nextCmd == 0x04)) {	// Next cmd is G_ZSBOSS_MOVEMEM
-		gstate.invw_factor = (f32)_w1;
+	if(((words.w0 & 0xfff) == 0x10) && (RSP.nextCmd == 0x04)) {	// Next cmd is G_ZSBOSS_MOVEMEM
+		gstate.invw_factor = (f32)words.w1;
 	}
 
-	memcpy((DMEM + (_w0 & 0xfff)), &_w1, sizeof(u32));
-	LOG(LOG_VERBOSE, "ZSortBOSS_MoveWord (Write 0x%08x to DMEM: 0x%04x)", _w1, (_w0 & 0xfff));
+	memcpy((DMEM + (words.w0 & 0xfff)), &words.w1, sizeof(u32));
+	LOG(LOG_VERBOSE, "ZSortBOSS_MoveWord (Write 0x%08x to DMEM: 0x%04x)", words.w1, (words.w0 & 0xfff));
 }
 
-void ZSortBOSS_ClearBuffer( u32, u32 )
+void ZSortBOSS_ClearBuffer( const Gwords words )
 {
 	memset((DMEM + 0xc20), 0, 512);
 	LOG(LOG_VERBOSE, "ZSortBOSS_ClearBuffer (Write 0x0 to DMEM: 0x0c20 -> 0x0e20)");
 }
 
 static
-void StoreMatrix( f32 mtx[4][4], u32 address )
+void StoreMatrix( f32 mtx[4][4], word address )
 {
 	struct _N64Matrix
 	{
@@ -137,18 +142,18 @@ void StoreMatrix( f32 mtx[4][4], u32 address )
 	}
 }
 
-void ZSortBOSS_MoveMem( u32 _w0, u32 _w1 )
+void ZSortBOSS_MoveMem( const Gwords words )
 {
-	int flag = (_w0 >> 23) & 0x01;
-	int len = 1 + (_w0 >> 12) & 0x7ff;
-	u32 addr = RSP_SegmentToPhysical(_w1);
+	int flag = (words.w0 >> 23) & 0x01;
+	int len = 1 + (words.w0 >> 12) & 0x7ff;
+	word addr = RSP_SegmentToPhysical(words.w1);
 	assert((addr & 3) == 0);
-	assert((_w0 & 3) == 0);
+	assert((words.w0 & 3) == 0);
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_MoveMem (R/W: %d, RDRAM: 0x%08x, DMEM: 0x%04x; len: %d)", flag, addr, (_w0 & 0xfff), len);
+	LOG(LOG_VERBOSE, "ZSortBOSS_MoveMem (R/W: %d, RDRAM: 0x%08x, DMEM: 0x%04x; len: %d)", flag, addr, (words.w0 & 0xfff), len);
 
 	// model matrix
-	if((_w0 & 0xfff) == 0x830) {
+	if((words.w0 & 0xfff) == 0x830) {
 		assert(flag == 0);
 		RSP_LoadMatrix(gSP.matrix.modelView[gSP.matrix.modelViewi], addr);
 		gSP.changed |= CHANGED_MATRIX;
@@ -156,7 +161,7 @@ void ZSortBOSS_MoveMem( u32 _w0, u32 _w1 )
 	}
 
 	// projection matrix
-	if((_w0 & 0xfff) == 0x870) {
+	if((words.w0 & 0xfff) == 0x870) {
 		assert(flag == 0);
 		RSP_LoadMatrix(gSP.matrix.projection, addr);
 		gSP.changed |= CHANGED_MATRIX;
@@ -164,7 +169,7 @@ void ZSortBOSS_MoveMem( u32 _w0, u32 _w1 )
 	}
 
 	// combined matrix
-	if((_w0 & 0xfff) == 0x8b0) {
+	if((words.w0 & 0xfff) == 0x8b0) {
 		if(flag == 0) {
 			RSP_LoadMatrix(gSP.matrix.combined, addr);
 			gSP.changed &= ~CHANGED_MATRIX;
@@ -175,7 +180,7 @@ void ZSortBOSS_MoveMem( u32 _w0, u32 _w1 )
 	}
 
 	// VIEWPORT
-	if((_w0 & 0xfff) == 0x0) {
+	if((words.w0 & 0xfff) == 0x0) {
 		u32 a = addr >> 1;
 
 		const f32 scale_x = _FIXED2FLOAT( ((s16*)RDRAM)[(a+0)^1], 2 );
@@ -211,26 +216,26 @@ void ZSortBOSS_MoveMem( u32 _w0, u32 _w1 )
 		return;
 	}
 
-	if((_w0 & 0xfff) == 0x730) {
+	if((words.w0 & 0xfff) == 0x730) {
 		assert(len == 256);
 		memcpy(gstate.fogtable, (RDRAM + addr), len);
 	}
 
 	if(flag == 0) {
-		memcpy((DMEM + (_w0 & 0xfff)), (RDRAM + addr), len);
+		memcpy((DMEM + (words.w0 & 0xfff)), (RDRAM + addr), len);
 	} else {
-		memcpy((RDRAM + addr), (DMEM + (_w0 & 0xfff)), len);
+		memcpy((RDRAM + addr), (DMEM + (words.w0 & 0xfff)), len);
 	}
 }
 
-void ZSortBOSS_MTXCAT(u32 _w0, u32 _w1)
+void ZSortBOSS_MTXCAT( const Gwords words )
 {
 	M44 *s = nullptr;
 	M44 *t = nullptr;
 	M44 *d = nullptr;
-	u32 S = (_w1 >> 16) & 0xfff;
-	u32 T = _w0 & 0xfff;
-	u32 D = _w1 & 0xfff;
+	u32 S = (words.w1 >> 16) & 0xfff;
+	u32 T = words.w0 & 0xfff;
+	u32 D = words.w1 & 0xfff;
 
 	switch(S) {
 		// model matrix
@@ -293,12 +298,12 @@ void ZSortBOSS_MTXCAT(u32 _w0, u32 _w1)
 	LOG(LOG_VERBOSE, "ZSortBOSS_MTXCAT (S: 0x%04x, T: 0x%04x, D: 0x%04x)", S, T, D);
 }
 
-void ZSortBOSS_MultMPMTX( u32 _w0, u32 _w1 )
+void ZSortBOSS_MultMPMTX( const Gwords words )
 {
-	assert((_w0 & 0xfff) == 0x8b0); // combined matrix
-	int num = 1 + _SHIFTR(_w1, 24, 8);
-	int src = (_w1 >> 12) & 0xfff;
-	int dst = _w1 & 0xfff;
+	assert((words.w0 & 0xfff) == 0x8b0); // combined matrix
+	int num = 1 + _SHIFTR(words.w1, 24, 8);
+	int src = (words.w1 >> 12) & 0xfff;
+	int dst = words.w1 & 0xfff;
 
 	assert((src & 3) == 0);
 	assert((dst & 3) == 0);
@@ -426,16 +431,16 @@ u32 ZSortBOSS_LoadObject(u32 _zHeader)
 			w1 = ((u32*)addr)[1];
 			if(w1 != gstate.rdpcmds[0]) {
 				gstate.rdpcmds[0] = w1;
-				ZSort_RDPCMD (0, w1);
+				ZSort_RDPCMD (Gwords(0, w1));
 			}
 			w1 = ((u32*)addr)[2];
 			if(w1 != gstate.rdpcmds[1]) {
-				ZSort_RDPCMD (0, w1);
+				ZSort_RDPCMD (Gwords(0, w1));
 				gstate.rdpcmds[1] = w1;
 			}
 			w1 = ((u32*)addr)[3];
 			if(w1 != gstate.rdpcmds[2]) {
-				ZSort_RDPCMD (0,  w1);
+				ZSort_RDPCMD (Gwords(0,  w1));
 				gstate.rdpcmds[2] = w1;
 			}
 			if(type != ZH_NULL) {
@@ -447,26 +452,26 @@ u32 ZSortBOSS_LoadObject(u32 _zHeader)
 	return RSP_SegmentToPhysical(((u32*)addr)[0]);
 }
 
-void ZSortBOSS_Obj( u32 _w0, u32 _w1 )
+void ZSortBOSS_Obj( const Gwords words )
 {
 	// make sure no pending subdl
 	assert((*REG.SP_STATUS & 0x80) == 0);
 
-	u32 zHeader = RSP_SegmentToPhysical(_w0);
+	u32 zHeader = RSP_SegmentToPhysical(words.w0);
 	while(zHeader)
 		zHeader = ZSortBOSS_LoadObject(zHeader);
-	zHeader = RSP_SegmentToPhysical(_w1);
+	zHeader = RSP_SegmentToPhysical(words.w1);
 	while(zHeader)
 		zHeader = ZSortBOSS_LoadObject(zHeader);
 }
 
-void ZSortBOSS_TransposeMTX( u32, u32 _w1 )
+void ZSortBOSS_TransposeMTX( const Gwords words )
 {
 	M44 *mtx = nullptr;
 	f32 m[4][4];
-	assert((_w1 & 0xfff) == 0x830); // model matrix
+	assert((words.w1 & 0xfff) == 0x830); // model matrix
 
-	switch(_w1 & 0xfff) {
+	switch(words.w1 & 0xfff) {
 		// model matrix
 		case 0x830:
 			mtx = (M44*)gSP.matrix.modelView[gSP.matrix.modelViewi];
@@ -495,20 +500,20 @@ void ZSortBOSS_TransposeMTX( u32, u32 _w1 )
 		}
 	}
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_TransposeMTX (MTX: 0x%04x)", (_w1 & 0xfff));
+	LOG(LOG_VERBOSE, "ZSortBOSS_TransposeMTX (MTX: 0x%04x)", (words.w1 & 0xfff));
 }
 
-void ZSortBOSS_Lighting( u32 _w0, u32 _w1 )
+void ZSortBOSS_Lighting( const Gwords words )
 {
-	u32 num = 1 + (_w1 >> 24);
-	u32 nsrs = _w0 & 0xfff;
-	u32 csrs = (_w0 >> 12) & 0xfff;
-	u32 cdest = (_w1 >> 12) & 0xfff;
-	u32 tdest = _w1 & 0xfff;
+	u32 num = 1 + (words.w1 >> 24);
+	u32 nsrs = words.w0 & 0xfff;
+	u32 csrs = (words.w0 >> 12) & 0xfff;
+	u32 cdest = (words.w1 >> 12) & 0xfff;
+	u32 tdest = words.w1 & 0xfff;
 	assert((tdest & 3) == 0);
 	tdest >>= 1;
 
-	u32 r4 = _w0 << 7;
+	u32 r4 = words.w0 << 7;
 	u32 r9 = DMEM[0x944];
 	assert(r9 == 0);
 
@@ -543,7 +548,7 @@ void ZSortBOSS_Lighting( u32 _w0, u32 _w1 )
 		((s16*)DMEM)[(tdest++)^1] = (s16)vtx.t;
 	}
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_Lighting (0x%08x, 0x%08x)", _w0, _w1);
+	LOG(LOG_VERBOSE, "ZSortBOSS_Lighting (0x%08x, 0x%08x)", words.w0, words.w1);
 }
 
 static
@@ -568,18 +573,18 @@ void ZSortBOSS_TransformVectorNormalize(float vec[3], float mtx[4][4])
 	vec[2] = vres[2] * recip;
 }
 
-void ZSortBOSS_TransformLights( u32 _w0, u32 _w1 )
+void ZSortBOSS_TransformLights( const Gwords words )
 {
-	assert((_w0 & 0xfff) == 0x830); // model matrix
-	assert(_w1 == 0x1630); // no light only lookat
-	assert((_w1 & 3) == 0);
+	assert((words.w0 & 0xfff) == 0x830); // model matrix
+	assert(words.w1 == 0x1630); // no light only lookat
+	assert((words.w1 & 3) == 0);
 
 	M44 *mtx = nullptr;
-	int addr = _w1 & 0xfff;
-	gSP.numLights = 1 - (_w1 >> 12);
+	int addr = words.w1 & 0xfff;
+	gSP.numLights = 1 - (words.w1 >> 12);
 
 	/*
-	switch(_w0 & 0xfff) {
+	switch(words.w0 & 0xfff) {
 		// model matrix
 		case 0x830:
 			mtx = (M44*)gSP.matrix.modelView[gSP.matrix.modelViewi];
@@ -620,27 +625,27 @@ void ZSortBOSS_TransformLights( u32 _w0, u32 _w1 )
 		addr += 24;
 	}
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_TransformLights (0x%08x, 0x%08x)", _w0, _w1);
+	LOG(LOG_VERBOSE, "ZSortBOSS_TransformLights (0x%08x, 0x%08x)", words.w0, words.w1);
 }
 
-void ZSortBOSS_Audio1( u32 _w0, u32 _w1 )
+void ZSortBOSS_Audio1( const Gwords words )
 {
-	u32 addr = RSP_SegmentToPhysical(_w1);
-	u32 val = ((u32*)DMEM)[(_w0 & 0xfff) >> 2];
+	word addr = RSP_SegmentToPhysical(words.w1);
+	u32 val = ((u32*)DMEM)[(words.w0 & 0xfff) >> 2];
 	((u32*)DMEM)[0] = val;
 	memcpy(RDRAM+addr, DMEM, 0x8);
-	LOG(LOG_VERBOSE, "ZSortBOSS_Audio1 (0x%08x, 0x%08x)", _w0, _w1);
+	LOG(LOG_VERBOSE, "ZSortBOSS_Audio1 (0x%08x, 0x%08x)", words.w0, words.w1);
 }
 
-void ZSortBOSS_Audio2( u32 _w0, u32 _w1 )
+void ZSortBOSS_Audio2( const Gwords words )
 {
-	int len = _w1 >> 24;
+	int len = words.w1 >> 24;
 
 	// Written by previous ZSortBOSS_MoveWord
 	u32 dst = ((u32*)DMEM)[0x10>>2];
 
-	f32 f1 = (f32)((_w0>>16) & 0xff) + (f32)(_w0 & 0xffff) / 65536.f;
-	f32 f2 = (f32)((_w1>>16) & 0xff) + (f32)(_w1 & 0xffff) / 65536.f;
+	f32 f1 = (f32)((words.w0>>16) & 0xff) + (f32)(words.w0 & 0xffff) / 65536.f;
+	f32 f2 = (f32)((words.w1>>16) & 0xff) + (f32)(words.w1 & 0xffff) / 65536.f;
 
 	// Written by previous ZSortBOSS_MoveWord
 	u16 v11[2];
@@ -678,12 +683,12 @@ void ZSortBOSS_Audio2( u32 _w0, u32 _w1 )
 		}
 	}
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_Audio2 (0x%08x, 0x%08x)", _w0, _w1);
+	LOG(LOG_VERBOSE, "ZSortBOSS_Audio2 (0x%08x, 0x%08x)", words.w0, words.w1);
 }
 
-void ZSortBOSS_Audio3( u32 _w0, u32 _w1 )
+void ZSortBOSS_Audio3( const Gwords words )
 {
-	u32 addr = RSP_SegmentToPhysical(_w0);
+	word addr = RSP_SegmentToPhysical(words.w0);
 	assert((addr & 3) == 0);
 
 	for(int i = 0; i < 8; i++) {
@@ -692,24 +697,24 @@ void ZSortBOSS_Audio3( u32 _w0, u32 _w1 )
 		}
 	}
 
-	addr = RSP_SegmentToPhysical(_w1);
+	addr = RSP_SegmentToPhysical(words.w1);
 	assert((addr & 3) == 0);
 
 	// What is this?
 	memcpy(DMEM, (RDRAM + addr), 0x8);
 	memcpy((DMEM+8), &addr, sizeof(addr));
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_Audio3 (0x%08x, 0x%08x)", _w0, _w1);
+	LOG(LOG_VERBOSE, "ZSortBOSS_Audio3 (0x%08x, 0x%08x)", words.w0, words.w1);
 }
 
-void ZSortBOSS_Audio4( u32 _w0, u32 _w1 )
+void ZSortBOSS_Audio4( const Gwords words )
 {
-	u32 addr = RSP_SegmentToPhysical(_w1);
+	word addr = RSP_SegmentToPhysical(words.w1);
 	assert((addr & 3) == 0);
 
-	u32 src = ((_w0 & 0xf000) >> 12) + addr;
+	u32 src = ((words.w0 & 0xf000) >> 12) + addr;
 	s16 * dst = (s16*)(DMEM+0x30);
-	int len = (_w0 & 0xfff);
+	int len = (words.w0 & 0xfff);
 
 	// Written by previous ZSortBOSS_MoveWord
 	s16 v1 = ((s16*)DMEM)[(0>>1)^1];
@@ -769,23 +774,23 @@ void ZSortBOSS_Audio4( u32 _w0, u32 _w1 )
 		}
 	}
 
-	LOG(LOG_VERBOSE, "ZSortBOSS_Audio4 (0x%08x, 0x%08x)", _w0, _w1);
+	LOG(LOG_VERBOSE, "ZSortBOSS_Audio4 (0x%08x, 0x%08x)", words.w0, words.w1);
 }
 
 // RDP Commands
-void ZSortBOSS_UpdateMask( u32 _w0, u32 _w1 )
+void ZSortBOSS_UpdateMask( const Gwords words )
 {
-	gstate.updatemask[0] = _w0 | 0xff000000;
-	gstate.updatemask[1] = _w1;
+	gstate.updatemask[0] = words.w0 | 0xff000000;
+	gstate.updatemask[1] = words.w1;
 	LOG(LOG_VERBOSE, "ZSortBOSS_UpdateMask (mask0: 0x%08x, mask1: 0x%08x)", gstate.updatemask[0], gstate.updatemask[1]);
 }
 
-void ZSortBOSS_SetOtherMode_L( u32 _w0, u32 _w1 )
+void ZSortBOSS_SetOtherMode_L( const Gwords words )
 {
-	//u32 mask = (s32)0x80000000 >> (_w0 & 0x1f); // unspecified behaviour
-	u32 mask = static_cast<u32>(s32(0x80000000) / (1 << (_w0 & 0x1f)));
-	mask >>= (_w0 >> 8) & 0x1f;
-	gDP.otherMode.l = (gDP.otherMode.l & ~mask) | _w1;
+	//u32 mask = (s32)0x80000000 >> (words.w0 & 0x1f); // unspecified behaviour
+	u32 mask = static_cast<u32>(s32(0x80000000) / (1 << (words.w0 & 0x1f)));
+	mask >>= (words.w0 >> 8) & 0x1f;
+	gDP.otherMode.l = (gDP.otherMode.l & ~mask) | words.w1;
 
 	const u32 w0 = gDP.otherMode.h;
 	const u32 w1 = gDP.otherMode.l;
@@ -796,12 +801,12 @@ void ZSortBOSS_SetOtherMode_L( u32 _w0, u32 _w1 )
 	LOG(LOG_VERBOSE, "ZSortBOSS_SetOtherMode_L (mode0: 0x%08x, mode1: 0x%08x)", gDP.otherMode.h, gDP.otherMode.l);
 }
 
-void ZSortBOSS_SetOtherMode_H( u32 _w0, u32 _w1 )
+void ZSortBOSS_SetOtherMode_H( const Gwords words )
 {
-	//u32 mask = (s32)0x80000000 >> (_w0 & 0x1f); // unspecified behaviour
-	u32 mask = static_cast<u32>(s32(0x80000000) / (1 << (_w0 & 0x1f)));
-	mask >>= (_w0 >> 8) & 0x1f;
-	gDP.otherMode.h = (gDP.otherMode.h & ~mask) | _w1;
+	//u32 mask = (s32)0x80000000 >> (words.w0 & 0x1f); // unspecified behaviour
+	u32 mask = static_cast<u32>(s32(0x80000000) / (1 << (words.w0 & 0x1f)));
+	mask >>= (words.w0 >> 8) & 0x1f;
+	gDP.otherMode.h = (gDP.otherMode.h & ~mask) | words.w1;
 
 	const u32 w0 = gDP.otherMode.h;
 	const u32 w1 = gDP.otherMode.l;
@@ -812,10 +817,10 @@ void ZSortBOSS_SetOtherMode_H( u32 _w0, u32 _w1 )
 	LOG(LOG_VERBOSE, "ZSortBOSS_SetOtherMode_H (mode0: 0x%08x, mode1: 0x%08x)", gDP.otherMode.h, gDP.otherMode.l);
 }
 
-void ZSortBOSS_SetOtherMode( u32 _w0, u32 _w1 )
+void ZSortBOSS_SetOtherMode( const Gwords words )
 {
-	gDP.otherMode.h = (_w0 & gstate.updatemask[0]) | (gDP.otherMode.h & ~gstate.updatemask[0]);
-	gDP.otherMode.l = (_w1 & gstate.updatemask[1]) | (gDP.otherMode.l & ~gstate.updatemask[1]);
+	gDP.otherMode.h = (words.w0 & gstate.updatemask[0]) | (gDP.otherMode.h & ~gstate.updatemask[0]);
+	gDP.otherMode.l = (words.w1 & gstate.updatemask[1]) | (gDP.otherMode.l & ~gstate.updatemask[1]);
 
 	const u32 w0 = gDP.otherMode.h;
 	const u32 w1 = gDP.otherMode.l;
@@ -826,25 +831,25 @@ void ZSortBOSS_SetOtherMode( u32 _w0, u32 _w1 )
 	LOG(LOG_VERBOSE, "ZSortBOSS_SetOtherMode (mode0: 0x%08x, mode1: 0x%08x)", gDP.otherMode.h, gDP.otherMode.l);
 }
 
-void ZSortBOSS_TriangleCommand( u32, u32 _w1 )
+void ZSortBOSS_TriangleCommand( const Gwords words )
 {
-	assert(((_w1 >> 8) & 0x3f) == 0x0e);	//Shade, Texture Triangle
+	assert(((words.w1 >> 8) & 0x3f) == 0x0e);	//Shade, Texture Triangle
 	gSP.texture.scales = 1.0f;
 	gSP.texture.scalet = 1.0f;
-	gSP.texture.level = (_w1 >> 3) & 0x7;
+	gSP.texture.level = (words.w1 >> 3) & 0x7;
 	gSP.texture.on = 1;
-	gSP.texture.tile = _w1 & 0x7;
+	gSP.texture.tile = words.w1 & 0x7;
 
 	gSPSetGeometryMode(G_SHADING_SMOOTH | G_SHADE);
-	LOG(LOG_VERBOSE, "ZSortBOSS_TriangleCommand (cmd: 0x%02x, level: %d, tile: %d)", ((_w1 >> 8) & 0x3f), gSP.texture.level, gSP.texture.tile);
+	LOG(LOG_VERBOSE, "ZSortBOSS_TriangleCommand (cmd: 0x%02x, level: %d, tile: %d)", ((words.w1 >> 8) & 0x3f), gSP.texture.level, gSP.texture.tile);
 }
 
-void ZSortBOSS_FlushRDPCMDBuffer( u32, u32 )
+void ZSortBOSS_FlushRDPCMDBuffer( const Gwords words )
 {
 	LOG(LOG_VERBOSE, "ZSortBOSS_FlushRDPCMDBuffer Ignored");
 }
 
-void ZSortBOSS_Reserved( u32, u32 )
+void ZSortBOSS_Reserved( const Gwords words )
 {
 	assert(0);
 }

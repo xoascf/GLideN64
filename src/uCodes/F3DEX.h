@@ -42,13 +42,13 @@
 #define F3DEX_BRANCH_Z				0xB0
 #define F3DEX_LOAD_UCODE			0xAF // 0xCF
 
-void F3DEX_Vtx( u32 w0, u32 w1 );
-void F3DEX_Tri1( u32 w0, u32 w1 );
-void F3DEX_CullDL( u32 w0, u32 w1 );
-void F3DEX_ModifyVtx( u32 w0, u32 w1 );
-void F3DEX_Tri2( u32 w0, u32 w1 );
-void F3DEX_Branch_Z( u32 w0, u32 w1 );
-void F3DEX_Load_uCode( u32 w0, u32 w1 );
+void F3DEX_Vtx( const Gwords words );
+void F3DEX_Tri1( const Gwords words );
+void F3DEX_CullDL( const Gwords words );
+void F3DEX_ModifyVtx( const Gwords words );
+void F3DEX_Tri2( const Gwords words );
+void F3DEX_Branch_Z( const Gwords words );
+void F3DEX_Load_uCode( const Gwords words );
 void F3DEX_Init();
 #endif
 

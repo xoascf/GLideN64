@@ -13,6 +13,10 @@
 #include <DisplayWindow.h>
 #include <algorithm>
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace graphics;
 
 RDRAMtoColorBuffer::RDRAMtoColorBuffer()
@@ -179,7 +183,7 @@ u32 RGBA32ToABGR32(u32 col, bool _fullAlpha)
 void RDRAMtoColorBuffer::_copyFromRDRAM(u32 _height, bool _fullAlpha)
 {
 	Cleaner cleaner(this);
-	const u32 address = m_pCurBuffer->m_startAddress;
+	const word address = m_pCurBuffer->m_startAddress;
 	const u32 width = m_pCurBuffer->m_width;
 	const u32 height = _height;
 
@@ -232,7 +236,7 @@ void RDRAMtoColorBuffer::_copyFromRDRAM(u32 _height, bool _fullAlpha)
 
 	if (!FBInfo::fbInfo.isSupported()) {
 		if (bUseAlpha && config.frameBufferEmulation.copyToRDRAM == Config::ctDisable) {
-			u32 totalBytes = (width * height) << m_pCurBuffer->m_size >> 1;
+			word totalBytes = (width * height) << m_pCurBuffer->m_size >> 1;
 			if (address + totalBytes > RDRAMSize + 1)
 				totalBytes = RDRAMSize + 1 - address;
 			memset(RDRAM + address, 0, totalBytes);

@@ -90,29 +90,30 @@ void F5INDI_LoadSTMatrix()
 }
 
 static
-void F5INDI_DMA_Direct(u32 _w0, u32 _w1)
+void F5INDI_DMA_Direct(const Gwords words)
 {
-	u32 * pSrc = CAST_RDRAM(u32*, _SHIFTR(_w1, 0, 24));
-	u32 * pDst = CAST_DMEM(u32*, _SHIFTR(_w0, 8, 12));
-	const u32 count = (_SHIFTR(_w0, 0, 8) + 1) >> 2;
+	u32 * pSrc = CAST_RDRAM(u32*, _SHIFTR(words.w1, 0, 24));
+	u32 * pDst = CAST_DMEM(u32*, _SHIFTR(words.w0, 8, 12));
+	const u32 count = (_SHIFTR(words.w0, 0, 8) + 1) >> 2;
 	for (u32 i = 0; i < count; ++i) {
 		pDst[i] = pSrc[i];
 	}
 }
 
 static
-void F5INDI_DMA_Segmented(u32 _w0, u32 _w1)
+void F5INDI_DMA_Segmented(const Gwords words)
 {
-	if (_SHIFTR(_w0, 0, 8) == 0)
+	if (_SHIFTR(words.w0, 0, 8) == 0)
 		return;
 	u32 * FD4 = CAST_DMEM(u32*, 0xFD4);
 	u32 * FD8 = CAST_DMEM(u32*, 0xFD8);
 	u32 * FDC = CAST_DMEM(u32*, 0xFDC);
-	s32 A0 = _SHIFTR(_w0, 0, 8);
+	s32 A0 = _SHIFTR(words.w0, 0, 8);
 	u32 A2 = *FDC;
 	s32 A3 = A0 + 1;
 	s32 A1 = A2 - A3;
-	u32 V1 = _SHIFTR(_w0, 8, 12);
+	u32 V1 = _SHIFTR(words.w0, 8, 12);
+	word tmp;
 	while (A1 < 0) {
 		u32 V0 = *FD4;
 		A3 = A0 - A2;
@@ -120,12 +121,12 @@ void F5INDI_DMA_Segmented(u32 _w0, u32 _w1)
 
 		V1 += A2;
 		A0 = A3;
-		_w1 = *FD8;
+		tmp = *FD8;
 
-		u32 * pSrc = CAST_RDRAM(u32*, _SHIFTR(_w1, 0, 24));
+		u32 * pSrc = CAST_RDRAM(u32*, _SHIFTR(tmp, 0, 24));
 		*FD8 = *pSrc;
 		*FDC = 0x100;
-		*FD4 = _w1 + 0x08;
+		*FD4 = tmp + 0x08;
 
 		A2 = *FDC;
 		A3 = A0 + 1;
@@ -140,10 +141,10 @@ void F5INDI_DMA_Segmented(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_Lighting_Overlay1(u32 _w0, u32 _w1)
+void F5INDI_Lighting_Overlay1(const Gwords words)
 {
 	static bool showErrorMessage = true;
-	const u32 S = ((_SHIFTR(_w1, 24, 7) << 2) + 4) & 0xFFF8;
+	const u32 S = ((_SHIFTR(words.w1, 24, 7) << 2) + 4) & 0xFFF8;
 	memset(DMEM + 0xD40, 0, S);
 
 	u8 L = *(DMEM + (0x58B ^ 3));
@@ -153,7 +154,7 @@ void F5INDI_Lighting_Overlay1(u32 _w0, u32 _w1)
 	}
 
 	u32 lightAddr = 0xB10;
-	const u32 dataAddr = _SHIFTR(_w0, 8, 12);
+	const u32 dataAddr = _SHIFTR(words.w0, 8, 12);
 
 	while (true) {
 		u8 * dst = DMEM + 0xD40;
@@ -209,7 +210,7 @@ void F5INDI_Lighting_Overlay1(u32 _w0, u32 _w1)
 					++V;
 					s16 Z1 = (s16)_SHIFTR(*V, 16, 16);
 
-					const u32 addr = 0x170 + offsetAddr[offsetAddrIdx ^ 3];
+					const word addr = 0x170 + offsetAddr[offsetAddrIdx ^ 3];
 					if (addr >= 0x1000 && showErrorMessage) {
 						dwnd().getDrawer().showMessage("Wrong data address detected!!! Please report to developers.\n", Milliseconds(5000));
 						showErrorMessage = false;
@@ -289,9 +290,9 @@ void F5INDI_Lighting_Overlay1(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_Lighting_Overlay2(u32 _w0, u32 _w1)
+void F5INDI_Lighting_Overlay2(const Gwords words)
 {
-	const u32 S = ((_SHIFTR(_w1, 24, 7) << 2) + 4) & 0xFFF8;
+	const u32 S = ((_SHIFTR(words.w1, 24, 7) << 2) + 4) & 0xFFF8;
 	memset(DMEM + 0xD40, 0, S + 8);
 
 	u8 L = *(DMEM + (0x58B ^ 3));
@@ -301,7 +302,7 @@ void F5INDI_Lighting_Overlay2(u32 _w0, u32 _w1)
 	}
 
 	u32 lightAddr = 0xB10;
-	const u32 dataAddr = _SHIFTR(_w0, 8, 12);
+	const u32 dataAddr = _SHIFTR(words.w0, 8, 12);
 
 	while (true) {
 		u8 * dst = DMEM + 0xD40;
@@ -435,11 +436,11 @@ void F5INDI_Lighting_Overlay2(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_Lighting_Basic(u32 _w0, u32 _w1)
+void F5INDI_Lighting_Basic(const Gwords words)
 {
-	s32 count = _SHIFTR(_w1, 24, 7);
+	s32 count = _SHIFTR(words.w1, 24, 7);
 	const u8* factor = DMEM + 0x158;
-	const u8* data = DMEM + _SHIFTR(_w0, 8, 12);
+	const u8* data = DMEM + _SHIFTR(words.w0, 8, 12);
 	u8 * dst = DMEM + 0xD40;
 	while (count > 0) {
 		for (u32 j = 0; j < 8; ++j) {
@@ -457,10 +458,10 @@ void F5INDI_Lighting_Basic(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_RebuildAndAdjustColors(u32 _w0, u32 _w1)
+void F5INDI_RebuildAndAdjustColors(const Gwords words)
 {
-	const u32 addr = _SHIFTR(_w0, 8, 12);
-	const u32 count = std::min(_SHIFTR(_w1, 24, 8), (0x588 - addr) >> 2);
+	const u32 addr = _SHIFTR(words.w0, 8, 12);
+	const u32 count = std::min((u32)_SHIFTR(words.w1, 24, 8), (u32)((0x588 - addr) >> 2));
 	const u16* data = CAST_DMEM(const u16*, addr);
 	std::vector<u32> vres(count);
 	for (u32 i = 0; i < count; ++i) {
@@ -474,7 +475,7 @@ void F5INDI_RebuildAndAdjustColors(u32 _w0, u32 _w1)
 }
 
 static
-const SWVertex * F5INDI_LoadVtx(u32 _w0, u32 _w1, std::vector<SWVertex> & _vres)
+const SWVertex * F5INDI_LoadVtx(word _w0, word _w1, std::vector<SWVertex> & _vres)
 {
 	const u32 count = _SHIFTR(_w1, 24, 8);
 	const u32 dmem_addr = _SHIFTR(_w0, 8, 12);
@@ -499,7 +500,7 @@ const SWVertex * F5INDI_LoadVtx(u32 _w0, u32 _w1, std::vector<SWVertex> & _vres)
 }
 
 static
-const SWVertex * F5INDI_AdjustVtx(u32 _w0, u32 _w1, std::vector<SWVertex> & _vres)
+const SWVertex * F5INDI_AdjustVtx(word _w0, word _w1, std::vector<SWVertex> & _vres)
 {
 	const u32 dmem_addr = _SHIFTR(_w0, 8, 12);
 	if (*CAST_DMEM(const u64*, 0x128) == 0)
@@ -524,26 +525,26 @@ const SWVertex * F5INDI_AdjustVtx(u32 _w0, u32 _w1, std::vector<SWVertex> & _vre
 }
 
 static
-void F5INDI_MoveMem(u32 _w0, u32 _w1)
+void F5INDI_MoveMem(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F5INDI_01Cmd (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F5INDI_01Cmd (0x%08x, 0x%08x)\n", words.w0, words.w1);
 
-	if (_SHIFTR(_w1, 0, 24) != 0)
-		F5INDI_DMA_Direct(_w0, _w1);
+	if (_SHIFTR(words.w1, 0, 24) != 0)
+		F5INDI_DMA_Direct(words);
 	else
-		F5INDI_DMA_Segmented(_w0, _w1);
+		F5INDI_DMA_Segmented(words);
 
-	switch (_w0 & 0x00f00000) {
+	switch (words.w0 & 0x00f00000) {
 	case 0x00000000:
-		switch (_w0) {
+		switch (words.w0) {
 		case 0x0101300F:
-			gSPViewport(_w1);
+			gSPViewport(words.w1);
 			break;
 		case 0x0105C03F:
-			gSPForceMatrix(_w1);
+			gSPForceMatrix(words.w1);
 			break;
 		case 0x010E403F:
-			RSP_LoadMatrix(getIndiData().mtx_vtx_gen, _SHIFTR(_w1, 0, 24));
+			RSP_LoadMatrix(getIndiData().mtx_vtx_gen, _SHIFTR(words.w1, 0, 24));
 			F5INDI_LoadSTMatrix();
 			break;
 		}
@@ -552,69 +553,69 @@ void F5INDI_MoveMem(u32 _w0, u32 _w1)
 	case 0x00100000:
 		{
 		std::vector<SWVertex> vertices;
-		const u32 n = _SHIFTR(_w1, 24, 7);
-		gSPSWVertex(F5INDI_AdjustVtx(_w0, _w1, vertices), n, nullptr);
+		const u32 n = _SHIFTR(words.w1, 24, 7);
+		gSPSWVertex(F5INDI_AdjustVtx(words.w0, words.w1, vertices), n, nullptr);
 		}
 		break;
 
 	case 0x00300000:
 		// Set num of lights
-		*(DMEM + (0x058B^3)) = static_cast<u8>(_w1 >> 24);
+		*(DMEM + (0x058B^3)) = static_cast<u8>(words.w1 >> 24);
 		break;
 
 	case 0x00500000:
 	{
-		const u32 n = _SHIFTR(_w1, 24, 7);
+		const u32 n = _SHIFTR(words.w1, 24, 7);
 		std::vector<SWVertex> vres(n);
-		gSPSWVertex(F5INDI_LoadVtx(_w0, _w1, vres), n, nullptr);
+		gSPSWVertex(F5INDI_LoadVtx(words.w0, words.w1, vres), n, nullptr);
 	}
 	break;
 
 	default:
-		if (_SHIFTR(_w0, 8, 12) == 0x480) {
+		if (_SHIFTR(words.w0, 8, 12) == 0x480) {
 			// Lighting
-			const u32 F = (_w0 >> 22);
+			const u32 F = (words.w0 >> 22);
 			if ((F & 2) != 0)
-				F5INDI_RebuildAndAdjustColors(_w0, _w1);
+				F5INDI_RebuildAndAdjustColors(words);
 			const u8 L = *(DMEM + (0x58B ^ 3));
-			const u32 C = _SHIFTR(_w1, 24, 8) | L;
+			const u32 C = _SHIFTR(words.w1, 24, 8) | L;
 			if ((C & 0x80) == 0) {
 				if ((F & 1) != 0)
-					F5INDI_Lighting_Overlay1(_w0, _w1);
+					F5INDI_Lighting_Overlay1(words);
 				else
-					F5INDI_Lighting_Overlay2(_w0, _w1);
+					F5INDI_Lighting_Overlay2(words);
 			} else
-				F5INDI_Lighting_Basic(_w0, _w1);
+				F5INDI_Lighting_Basic(words);
 		}
 	break;
 	}
 }
 
 static
-void F5INDI_SetDListAddr(u32 _w0, u32 _w1)
+void F5INDI_SetDListAddr(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F5INDI_SetDListAddr (0x%08x, 0x%08x)\n", _w0, _w1);
-	const u32 count = _w0 & 0x1FF;
-	const u32 * pSrc = CAST_RDRAM(const u32*, _SHIFTR(_w1, 0, 24));
+	DebugMsg(DEBUG_NORMAL, "F5INDI_SetDListAddr (0x%08x, 0x%08x)\n", words.w0, words.w1);
+	const u32 count = words.w0 & 0x1FF;
+	const u32 * pSrc = CAST_RDRAM(const u32*, _SHIFTR(words.w1, 0, 24));
 	u32 * pDst = CAST_DMEM(u32*, 0xFD4);
-	pDst[0] = _w1 + 8;
+	pDst[0] = words.w1 + 8;
 	pDst[1] = *pSrc;
 	pDst[2] = count;
 }
 
 static
-void F5INDI_DList(u32 _w0, u32 _w1)
+void F5INDI_DList(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F5INDI_DList (0x%08x)\n", _w1);
-	gSPDisplayList(_w1);
+	DebugMsg(DEBUG_NORMAL, "F5INDI_DList (0x%08x)\n", words.w1);
+	gSPDisplayList(words.w1);
 	_updateF5DL();
 }
 
 static
-void F5INDI_BranchDList(u32 _w0, u32 _w1)
+void F5INDI_BranchDList(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F5INDI_BranchDList (0x%08x)\n", _w1);
-	gSPBranchList(_w1);
+	DebugMsg(DEBUG_NORMAL, "F5INDI_BranchDList (0x%08x)\n", words.w1);
+	gSPBranchList(words.w1);
 	_updateF5DL();
 }
 
@@ -670,29 +671,29 @@ void F5INDI_DoSubDList()
 
 	RSP.PCi++;
 	RSP.F5DL[RSP.PCi] = _SHIFTR(*CAST_RDRAM(const u32*, dlistAddr), 0, 24);
-	RSP.PC[RSP.PCi] = dlistAddr + 8;
+	RSP.PC[RSP.PCi] = dlistAddr + sizeof(Gwords);
 
 	while (true) {
-		RSP.w0 = *CAST_RDRAM(u32*, RSP.PC[RSP.PCi]);
-		RSP.w1 = *CAST_RDRAM(u32*, RSP.PC[RSP.PCi] + 4);
+		RSP.words.w0 = *CAST_RDRAM(u32*, RSP.PC[RSP.PCi]);
+		RSP.words.w1 = *CAST_RDRAM(u32*, RSP.PC[RSP.PCi] + 4);
 
-		RSP.cmd = _SHIFTR(RSP.w0, 24, 8);
+		RSP.cmd = _SHIFTR(RSP.words.w0, 24, 8);
 
-		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02X W0=0x%08X W1=0x%08X\n", RSP.PC[RSP.PCi], RSP.cmd, RSP.w0, RSP.w1);
+		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02X W0=0x%08X W1=0x%08X\n", RSP.PC[RSP.PCi], RSP.cmd, RSP.words.w0, RSP.words.w1);
 
-		if (RSP.w0 == 0xB8000000 && RSP.w1 == 0xFFFFFFFF)
+		if (RSP.words.w0 == 0xB8000000 && RSP.words.w1 == 0xFFFFFFFF)
 			break;
 
 		RSP.nextCmd = _SHIFTR(*CAST_RDRAM(const u32*, RSP.PC[RSP.PCi] + 8), 24, 8);
 
-		GBI.cmd[RSP.cmd](RSP.w0, RSP.w1);
+		GBI.cmd[RSP.cmd](RSP.words);
 		RSP.PC[RSP.PCi] += 8;
 
 		if (RSP.nextCmd == 0xBD) {
 			// Naboo
 			u32* command = CAST_DMEM(u32*, 0xE58);
-			command[0] = RSP.w0;
-			command[1] = RSP.w1;
+			command[0] = RSP.words.w0;
+			command[1] = RSP.words.w1;
 			break;
 		}
 	}
@@ -729,15 +730,15 @@ bool F5INDI_AddVertices(const u32 _vert[3], GraphicsDrawer & _drawer)
 	return true;
 }
 
-void F5INDI_Tri(u32 _w0, u32 _w1)
+void F5INDI_Tri(const Gwords words)
 {
 	const bool bTri2 = RSP.cmd == F5INDI_TRI2;
-	DebugMsg(DEBUG_NORMAL, "F5INDI_Tri%d (0x%08x, 0x%08x)\n", bTri2 ? 2 : 1, _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F5INDI_Tri%d (0x%08x, 0x%08x)\n", bTri2 ? 2 : 1, words.w0, words.w1);
 
 	const u32* params = CAST_RDRAM(const u32*, RSP.PC[RSP.PCi]);
 	const u32 w3 = params[3];
-	const u32 v1 = (_SHIFTR(_w1, 16, 12) - 0x600) / 40;
-	const u32 v2 = (_SHIFTR(_w1,  0, 12) - 0x600) / 40;
+	const u32 v1 = (_SHIFTR(words.w1, 16, 12) - 0x600) / 40;
+	const u32 v2 = (_SHIFTR(words.w1,  0, 12) - 0x600) / 40;
 	const u32 v3 = (_SHIFTR( w3, 16, 12) - 0x600) / 40;
 	const u32 v4 = (_SHIFTR( w3,  0, 12) - 0x600) / 40;
 	const u32 vert[4] = { v1, v2, v3, v4 };
@@ -754,11 +755,11 @@ void F5INDI_Tri(u32 _w0, u32 _w1)
 	const u32 C4 = *CAST_DMEM(const u32*, 0xD40 + S4);
 	const u32 colors[4] = { C1, C2, C3, C4 };
 
-	const bool useTex = (_w0 & 0x0200) != 0;
+	const bool useTex = (words.w0 & 0x0200) != 0;
 
 	u32 ST[4];
 	const u32 * texbase;
-	if ((_w0 & 0x0800) != 0) {
+	if ((words.w0 & 0x0800) != 0) {
 		F5INDI_CalcST(params, ST);
 		texbase = ST;
 	} else {
@@ -823,7 +824,7 @@ void F5INDI_Tri(u32 _w0, u32 _w1)
 	RSP.PC[RSP.PCi] += 8;
 }
 
-void F5INDI_GenVertices(u32 _w0, u32 _w1)
+void F5INDI_GenVertices(const Gwords words)
 {
 	f32 combined[4][4];
 	memcpy(combined, gSP.matrix.combined, sizeof(combined));
@@ -832,7 +833,7 @@ void F5INDI_GenVertices(u32 _w0, u32 _w1)
 	const SWVertex * vertex = CAST_DMEM(const SWVertex*, 0x170);
 	bool verticesToProcess[32];
 
-	u32 A = (_w0 & 0x0000FFFF) | (_w1 & 0xFFFF0000);
+	u32 A = (words.w0 & 0x0000FFFF) | (words.w1 & 0xFFFF0000);
 	u32 B = 1;
 	u32 count = 0;
 
@@ -1469,17 +1470,17 @@ void F5Naboo_PrepareAndDrawTriangle(const u32 _vert[3], GraphicsDrawer & _drawer
 	const u32 C = A | B;
 	CAST_DMEM(u16*, 0x100)[0x0 ^ 1] = C;
 
-	auto doCommands = [](u32 addr)
+	auto doCommands = [](word addr)
 	{
 		const u32 * commands = CAST_DMEM(const u32*, addr);
 		u32 w0 = commands[0];
 		u32 w1 = commands[1];
 		u32 cmd = _SHIFTR(w0, 24, 8);
-		GBI.cmd[cmd](w0, w1);
+		GBI.cmd[cmd](Gwords(w0, w1));
 		w0 = commands[2];
 		w1 = commands[3];
 		cmd = _SHIFTR(w0, 24, 8);
-		GBI.cmd[cmd](w0, w1);
+		GBI.cmd[cmd](Gwords(w0, w1));
 	};
 
 	const u32 dlistAddr = _SHIFTR(*CAST_DMEM(const u32*, 0x58C), 0, 24);
@@ -1851,14 +1852,14 @@ void F5Naboo_GenVertices0C()
 
 	};
 
-	for (u32 addrShift = startAddr; addrShift <= endAddr; addrShift += 4) {
+	for (word addrShift = startAddr; addrShift <= endAddr; addrShift += 4) {
 
 		PrepareVertexDataStep3(vd1);
 		PrepareVertexDataStep3(vd2);
 
 		// Step 4
-		const u32 addr1 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr), 16, 16) + addrShift;
-		const u32 addr2 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr + 8), 16, 16) + addrShift;
+		const word addr1 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr), 16, 16) + addrShift;
+		const word addr2 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr + 8), 16, 16) + addrShift;
 		PrepareVertexDataStep4_7(addr1, vd1);
 		PrepareVertexDataStep4_7(addr2, vd2);
 
@@ -2026,8 +2027,8 @@ void F5Naboo_GenVertices09()
 			for (u32 i = 0; i < 4; ++i)
 				pDst[i] = (pSrc1[i] + pSrc2[i]) >> 1;
 		};
-		const u32 addr3 = _SHIFTR(_V, 16, 16) + _addrShift + (_addrShift & 4);
-		const u32 addr4 = _SHIFTR(_V, 0, 16) + _addrShift - (_addrShift & 4);
+		const word addr3 = _SHIFTR(_V, 16, 16) + _addrShift + (_addrShift & 4);
+		const word addr4 = _SHIFTR(_V, 0, 16) + _addrShift - (_addrShift & 4);
 		const u32 factor1 = 0x7FFF - _vd.L;
 		const u32 factor2 = 0xFFFE - _vd.M - _vd.N;
 		u32 U = *CAST_DMEM(const u32*, _addr);
@@ -2086,15 +2087,15 @@ void F5Naboo_GenVertices09()
 		*CAST_DMEM(u32*, _addr + 0x168) = _vd.color2.color;
 	};
 
-	for (u32 addrShift = startAddr; addrShift <= endAddr; addrShift += 4) {
+	for (word addrShift = startAddr; addrShift <= endAddr; addrShift += 4) {
 
 		PrepareVertexDataStep3(vd1);
 		PrepareVertexDataStep3(vd2);
 
 		// Step 4
-		const u32 addr1 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr), 16, 16) + addrShift;
-		const u32 addr2 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr + 8), 16, 16) + addrShift;
-		//const u32 addrShift2 = addrShift + (addrShift & 4);
+		const word addr1 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr), 16, 16) + addrShift;
+		const word addr2 = _SHIFTR(*CAST_DMEM(const u32*, dmemSrcAddr + 8), 16, 16) + addrShift;
+		//const word addrShift2 = addrShift + (addrShift & 4);
 
 		PrepareVertexDataStep4(addr1, *CAST_DMEM(const u32*, dmemSrcAddr + 0x20), addrShift, vd1);
 		PrepareVertexDataStep4(addr2, *CAST_DMEM(const u32*, dmemSrcAddr + 0x24), addrShift, vd2);
@@ -2165,16 +2166,16 @@ void F5Naboo_GenVertices09()
 }
 
 static
-void F5NABOO_TexturedPolygons(u32, u32)
+void F5NABOO_TexturedPolygons(const Gwords words)
 {
 	F5Naboo_DrawPolygons();
 }
 
 static
-void F5INDI_GeometryGen(u32 _w0, u32 _w1)
+void F5INDI_GeometryGen(const Gwords words)
 {
-	const u32 mode = _SHIFTR(_w1, 0, 8);
-	DebugMsg(DEBUG_NORMAL, "F5INDI_GeometryGen (0x%08x, 0x%08x): mode=0x%02x\n", _w0, _w1, mode);
+	const u32 mode = _SHIFTR(words.w1, 0, 8);
+	DebugMsg(DEBUG_NORMAL, "F5INDI_GeometryGen (0x%08x, 0x%08x): mode=0x%02x\n", words.w0, words.w1, mode);
 	switch (mode) {
 	case 0x09: // Naboo
 		F5Naboo_GenVertices09();
@@ -2198,7 +2199,7 @@ void F5INDI_GeometryGen(u32 _w0, u32 _w1)
 		RSP.PC[RSP.PCi] += 24;
 		break;
 	case 0x18:
-		F5INDI_GenVertices(_w0, _w1);
+		F5INDI_GenVertices(words);
 		break;
 	case 0x24:
 		F5INDI_DoSubDList();
@@ -2216,15 +2217,15 @@ void F5INDI_GeometryGen(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_Texrect(u32 _w0, u32 _w1)
+void F5INDI_Texrect(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F5INDI_Texrect (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F5INDI_Texrect (0x%08x, 0x%08x)\n", words.w0, words.w1);
 	F5INDI_DoSubDList();
-	RDP_TexRect(_w0, _w1);
+	RDP_TexRect(words);
 }
 
 static
-void F5INDI_JumpDL(u32 _w0, u32 _w1)
+void F5INDI_JumpDL(const Gwords words)
 {
 	DebugMsg(DEBUG_NORMAL, "F5INDI_JumpDL\n");
 	RSP.PC[RSP.PCi] = RSP.F5DL[RSP.PCi];
@@ -2232,25 +2233,25 @@ void F5INDI_JumpDL(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_EndDisplayList(u32 _w0, u32 _w1)
+void F5INDI_EndDisplayList(const Gwords words)
 {
 	DebugMsg(DEBUG_NORMAL, "F5INDI_EndDisplayList\n");
-	gSPEndDisplayList();
+	gSPEndDisplayList(words);
 }
 
 static
-void F5INDI_MoveWord(u32 _w0, u32 _w1)
+void F5INDI_MoveWord(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F5INDI_MoveWord (0x%08x, 0x%08x)\n", _w0, _w1);
-	const u32 destAddr = _SHIFTR(_w0, 0, 12);
-	*CAST_DMEM(u32*, destAddr) = _w1;
+	DebugMsg(DEBUG_NORMAL, "F5INDI_MoveWord (0x%08x, 0x%08x)\n", words.w0, words.w1);
+	const u32 destAddr = _SHIFTR(words.w0, 0, 12);
+	*CAST_DMEM(u32*, destAddr) = words.w1;
 
 	switch (destAddr) {
 	case G_MWO_CLIP_RNX:
 	case G_MWO_CLIP_RNY:
 	case G_MWO_CLIP_RPX:
 	case G_MWO_CLIP_RPY:
-		gSPClipRatio(_w1);
+		gSPClipRatio(words.w1);
 		break;
 	case G_MW_SEGMENT:
 		assert(false);
@@ -2260,15 +2261,15 @@ void F5INDI_MoveWord(u32 _w0, u32 _w1)
 		// Used to adjust colors (See command 0x01 - Case 02)
 		break;
 	case 0x160:
-		gSP.fog.multiplierf = _FIXED2FLOAT((s32)_w1, 16);
+		gSP.fog.multiplierf = _FIXED2FLOAT((s32)words.w1, 16);
 		gSP.changed |= CHANGED_FOGPOSITION;
 		break;
 	case 0x164:
-		gSP.fog.offsetf = _FIXED2FLOAT((s32)_w1, 16);
+		gSP.fog.offsetf = _FIXED2FLOAT((s32)words.w1, 16);
 		gSP.changed |= CHANGED_FOGPOSITION;
 		break;
 	case 0x14C:
-		gSPPerspNormalize(_w1);
+		gSPPerspNormalize(words.w1);
 		break;
 	case 0x58C:
 		// sub dlist address;
@@ -2281,19 +2282,19 @@ void F5INDI_MoveWord(u32 _w0, u32 _w1)
 }
 
 static
-void F5INDI_SetOtherMode(u32 w0, u32 w1)
+void F5INDI_SetOtherMode(const Gwords words)
 {
 	//u32 mask = (s32)0x80000000 >> _SHIFTR(w0, 0, 5); // unspecified behaviour
-	u32 mask = static_cast<u32>(s32(0x80000000) / (1 << _SHIFTR(w0, 0, 5)));
-	mask >>= _SHIFTR(w0, 8, 5);
+	u32 mask = static_cast<u32>(s32(0x80000000) / (1 << _SHIFTR(words.w0, 0, 5)));
+	mask >>= _SHIFTR(words.w0, 8, 5);
 
-	const u32 A0 = _SHIFTR(w0, 16, 3);
+	const u32 A0 = _SHIFTR(words.w0, 16, 3);
 	if (A0 == 0) {
-		gDP.otherMode.h = (gDP.otherMode.h&(~mask)) | w1;
+		gDP.otherMode.h = (gDP.otherMode.h&(~mask)) | words.w1;
 		if (mask & 0x00300000)  // cycle type
 			gDP.changed |= CHANGED_CYCLETYPE;
 	} else if (A0 == 4) {
-		gDP.otherMode.l = (gDP.otherMode.l&(~mask)) | w1;
+		gDP.otherMode.l = (gDP.otherMode.l&(~mask)) | words.w1;
 
 		if (mask & 0x00000003)  // alpha compare
 			gDP.changed |= CHANGED_ALPHACOMPARE;
@@ -2304,26 +2305,26 @@ void F5INDI_SetOtherMode(u32 w0, u32 w1)
 }
 
 static
-void F5INDI_SetOtherMode_Conditional(u32 w0, u32 w1)
+void F5INDI_SetOtherMode_Conditional(const Gwords words)
 {
-	if (_SHIFTR(w0, 23, 1) != *CAST_DMEM(const u32*, 0x11C))
+    if (_SHIFTR(words.w0, 23, 1) != *CAST_DMEM(const u32*, 0x11C))
 		return;
 
-	F5INDI_SetOtherMode(w0, w1);
+	F5INDI_SetOtherMode(words);
 }
 
 static
-void F5INDI_ClearGeometryMode(u32 w0, u32 w1)
+void F5INDI_ClearGeometryMode(const Gwords words)
 {
-	gSPClearGeometryMode(~w1);
+	gSPClearGeometryMode(~words.w1);
 }
 
 static
-void F5INDI_Texture(u32 w0, u32 w1)
+void F5INDI_Texture(const Gwords words)
 {
-	F3D_Texture(w0, w1);
-	*CAST_DMEM(u32*, 0x148) = w0;
-	const u32 V0 = (gSP.geometryMode ^ w0) & 2;
+	F3D_Texture(words);
+	*CAST_DMEM(u32*, 0x148) = words.w0;
+	const u32 V0 = (gSP.geometryMode ^ words.w0) & 2;
 	gSP.geometryMode ^= V0;
 }
 

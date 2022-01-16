@@ -60,14 +60,14 @@ static u32 t32uxSetTileW1 = 0;
 static
 void T3DUX_ProcessRDP(u32 _cmds)
 {
-	u32 addr = RSP_SegmentToPhysical(_cmds) >> 2;
+	word addr = RSP_SegmentToPhysical(_cmds) >> 2;
 	if (addr != 0) {
 		RSP.LLE = true;
 		u32 w0 = ((u32*)RDRAM)[addr++];
 		u32 w1 = ((u32*)RDRAM)[addr++];
 		RSP.cmd = _SHIFTR( w0, 24, 8 );
 		while (w0 + w1 != 0) {
-			GBI.cmd[RSP.cmd]( w0, w1 );
+			GBI.cmd[RSP.cmd]( Gwords(w0, w1) );
 			w0 = ((u32*)RDRAM)[addr++];
 			w1 = ((u32*)RDRAM)[addr++];
 			RSP.cmd = _SHIFTR( w0, 24, 8 );
@@ -90,7 +90,7 @@ void T3DUX_ProcessRDP(u32 _cmds)
 static
 void T3DUX_LoadGlobState(u32 pgstate)
 {
-	const u32 addr = RSP_SegmentToPhysical(pgstate);
+	const word addr = RSP_SegmentToPhysical(pgstate);
 	T3DUXGlobState *gstate = (T3DUXGlobState*)&RDRAM[addr];
 	const u32 w0 = gstate->othermode0;
 	const u32 w1 = gstate->othermode1;
@@ -98,7 +98,7 @@ void T3DUX_LoadGlobState(u32 pgstate)
 					 w1 );					// mode1
 
 	for (int s = 0; s < 16; ++s)
-		gSPSegment(s, gstate->segBases[s] & 0x00FFFFFF);
+		gSPSegment(s, SEGMENT_MASK(gstate->segBases[s]));
 
 	gSPViewport(pgstate + 80);
 
@@ -158,7 +158,7 @@ void T3DUX_LoadObject(u32 pstate, u32 pvtx, u32 ptri, u32 pcol)
 				drawer.drawDMATriangles(static_cast<u32>(pVtx - drawer.getDMAVerticesData()));
 				pVtx = drawer.getDMAVerticesData();
 				pal = newPal;
-				RDP_SetTile(t32uxSetTileW0, w1);
+				RDP_SetTile(Gwords(t32uxSetTileW0, w1));
 			}
 		}
 
@@ -213,7 +213,7 @@ void T3DUX_LoadObject(u32 pstate, u32 pvtx, u32 ptri, u32 pcol)
 void RunT3DUX()
 {
 	while (true) {
-		u32 addr = RSP.PC[RSP.PCi] >> 2;
+		word addr = RSP.PC[RSP.PCi] >> 2;
 		const u32 pgstate = ((u32*)RDRAM)[addr++];
 		const u32 pstate = ((u32*)RDRAM)[addr++];
 		const u32 pvtx = ((u32*)RDRAM)[addr++];

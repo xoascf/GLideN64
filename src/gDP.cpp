@@ -23,6 +23,10 @@
 #include "DisplayWindow.h"
 #include <Graphics/Context.h>
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace std;
 
 gDPInfo gDP;
@@ -165,7 +169,7 @@ void gDPSetCombine( u32 muxs0, u32 muxs1 )
 #endif
 }
 
-void gDPSetColorImage( u32 format, u32 size, u32 width, u32 address )
+void gDPSetColorImage( u32 format, u32 size, u32 width, word address )
 {
 	address = RSP_SegmentToPhysical( address );
 
@@ -186,7 +190,7 @@ void gDPSetColorImage( u32 format, u32 size, u32 width, u32 address )
 #endif
 }
 
-void gDPSetTextureImage(u32 format, u32 size, u32 width, u32 address)
+void gDPSetTextureImage(u32 format, u32 size, u32 width, word address)
 {
 	gDP.textureImage.format = format;
 	gDP.textureImage.size = size;
@@ -213,7 +217,7 @@ void gDPSetTextureImage(u32 format, u32 size, u32 width, u32 address)
 #endif
 }
 
-void gDPSetDepthImage( u32 address )
+void gDPSetDepthImage( word address )
 {
 	address = RSP_SegmentToPhysical( address );
 	gDP.depthImageAddress = address;
@@ -463,7 +467,7 @@ void gDPLoadTile32b(u32 uls, u32 ult, u32 lrs, u32 lrt)
 	const u32 height = lrt - ult + 1;
 	const u32 line = gDP.loadTile->line << 2;
 	const u32 tbase = gDP.loadTile->tmem << 2;
-	const u32 addr = gDP.textureImage.address >> 2;
+	const word addr = gDP.textureImage.address >> 2;
 	const u32 * src = reinterpret_cast<const u32*>(RDRAM);
 	u16 * tmem16 = reinterpret_cast<u16*>(TMEM);
 	u32 c, ptr, tline, s, xorval;
@@ -475,8 +479,13 @@ void gDPLoadTile32b(u32 uls, u32 ult, u32 lrs, u32 lrt)
 		for (u32 i = 0; i < width; ++i) {
 			c = src[addr + s + i];
 			ptr = ((tline + i) ^ xorval) & 0x3ff;
+#ifdef NATIVE
+			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr] = c & 0xffff;
+#else
 			tmem16[ptr] = c >> 16;
 			tmem16[ptr | 0x400] = c & 0xffff;
+#endif
 		}
 	}
 }
@@ -542,7 +551,7 @@ void gDPLoadTile(u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt)
 			gDP.loadTile->loadHeight = max(gDP.loadTile->loadHeight, info.height);
 	}
 
-	u32 address = gDP.textureImage.address + gDP.loadTile->ult * gDP.textureImage.bpl + (gDP.loadTile->uls << gDP.textureImage.size >> 1);
+	word address = gDP.textureImage.address + gDP.loadTile->ult * gDP.textureImage.bpl + (gDP.loadTile->uls << gDP.textureImage.size >> 1);
 	u32 bpl2 = bpl;
 	if (gDP.loadTile->lrs > gDP.textureImage.width)
 		bpl2 = (gDP.textureImage.width - gDP.loadTile->uls);
@@ -556,9 +565,9 @@ void gDPLoadTile(u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt)
 	if (gDP.loadTile->size == G_IM_SIZ_32b)
 		gDPLoadTile32b(gDP.loadTile->uls, gDP.loadTile->ult, gDP.loadTile->lrs, gDP.loadTile->lrt);
 	else {
-		u32 tmemAddr = gDP.loadTile->tmem;
-		const u32 line = gDP.loadTile->line;
-		const u32 qwpr = bpr >> 3;
+		word tmemAddr = gDP.loadTile->tmem;
+		const word line = gDP.loadTile->line;
+		const word qwpr = bpr >> 3;
 		for (u32 y = 0; y < height; ++y) {
 			if (address + bpl > RDRAMSize)
 				UnswapCopyWrap(RDRAM, address, reinterpret_cast<u8*>(TMEM), tmemAddr << 3, 0xFFF, RDRAMSize - address);
@@ -589,7 +598,7 @@ void gDPLoadBlock32(u32 uls,u32 lrs, u32 dxt)
 	const u32 line = gDP.loadTile->line << 2;
 
 	u16 *tmem16 = reinterpret_cast<u16*>(TMEM);
-	u32 addr = gDP.loadTile->imageAddress >> 2;
+	word addr = gDP.loadTile->imageAddress >> 2;
 	u32 width = (lrs - uls + 1) << 2;
 	if (width == 4) // lr_s == 0, 1x1 texture
 		width = 1;
@@ -610,12 +619,21 @@ void gDPLoadBlock32(u32 uls,u32 lrs, u32 dxt)
 				i += line;
 			ptr = ((tb + i) ^ t) & 0x3ff;
 			c = src[addr + i];
+#ifdef NATIVE
+			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr] = c & 0xffff;
+			ptr = ((tb + i + 1) ^ t) & 0x3ff;
+			c = src[addr + i + 1];
+			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr] = c & 0xffff;
+#else
 			tmem16[ptr] = c >> 16;
 			tmem16[ptr | 0x400] = c & 0xffff;
 			ptr = ((tb + i + 1) ^ t) & 0x3ff;
 			c = src[addr + i + 1];
 			tmem16[ptr] = c >> 16;
 			tmem16[ptr | 0x400] = c & 0xffff;
+#endif
 			j += dxt;
 		}
 	} else {
@@ -623,8 +641,13 @@ void gDPLoadBlock32(u32 uls,u32 lrs, u32 dxt)
 		for (u32 i = 0; i < width; i++) {
 			ptr = ((tb + i) ^ 1) & 0x3ff;
 			c = src[addr + i];
+#ifdef NATIVE
+			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr] = c & 0xffff;
+#else
 			tmem16[ptr] = c >> 16;
 			tmem16[ptr | 0x400] = c & 0xffff;
+#endif
 		}
 	}
 }
@@ -664,7 +687,14 @@ void gDPLoadBlock(u32 tile, u32 uls, u32 ult, u32 lrs, u32 dxt)
 		bytes = (bytes & (~7U)) + 8;
 
 	info.bytes = bytes;
-	u32 address = gDP.textureImage.address + ult * gDP.textureImage.bpl + (uls << gDP.textureImage.size >> 1);
+	word address = gDP.textureImage.address + ult * gDP.textureImage.bpl + (uls << gDP.textureImage.size >> 1);
+
+#ifdef NATIVE
+	if(address == 0 || address == 0xCDCDCDCD)
+	{
+		return;
+	}
+#endif
 
 	if (bytes == 0 || (address + bytes) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load texture block out of range\n");
@@ -730,7 +760,7 @@ void gDPLoadTLUT( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
 		return;
 	}
 	u16 count = static_cast<u16>((gDP.tiles[tile].lrs - gDP.tiles[tile].uls + 1) * (gDP.tiles[tile].lrt - gDP.tiles[tile].ult + 1));
-	u32 address = gDP.textureImage.address + gDP.tiles[tile].ult * gDP.textureImage.bpl + (gDP.tiles[tile].uls << gDP.textureImage.size >> 1);
+	word address = gDP.textureImage.address + gDP.tiles[tile].ult * gDP.textureImage.bpl + (gDP.tiles[tile].uls << gDP.textureImage.size >> 1);
 	u16 pal = static_cast<u16>((gDP.tiles[tile].tmem - 256) >> 4);
 	u16 * dest = reinterpret_cast<u16*>(TMEM);
 	u32 destIdx = gDP.tiles[tile].tmem << 2;
@@ -738,7 +768,12 @@ void gDPLoadTLUT( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
 	int i = 0;
 	while (i < count) {
 		for (u16 j = 0; (j < 16) && (i < count); ++j, ++i) {
+#ifdef NATIVE
+			//dest[(destIdx | 0x0400) & 0x07FF] = *reinterpret_cast<u16*>(RDRAM + (address ^ 2));
+			dest[(destIdx) & 0x07FF] = *reinterpret_cast<u16*>(RDRAM + (address));
+#else
 			dest[(destIdx | 0x0400) & 0x07FF] = swapword(*reinterpret_cast<u16*>(RDRAM + (address ^ 2)));
+#endif
 			address += 2;
 			destIdx += 4;
 		}
@@ -984,9 +1019,16 @@ void gDPTileSync()
 	DebugMsg( DEBUG_NORMAL | DEBUG_IGNORED, "gDPTileSync();\n" );
 }
 
-void gDPPipeSync()
+void gDPPipeSync(const Gwords words)
 {
+    const word line = _SHIFTR(words.w0, 0, 16);
+    const char* file = (const char*)words.w1;
+
 	DebugMsg( DEBUG_NORMAL | DEBUG_IGNORED, "gDPPipeSync();\n" );
+
+	if (line && file) {
+        DebugMsg(DEBUG_NORMAL, "\nLINE %s : %d;\n\n", file, line);
+    }
 }
 
 void gDPLoadSync()
@@ -994,9 +1036,16 @@ void gDPLoadSync()
 	DebugMsg( DEBUG_NORMAL | DEBUG_IGNORED, "gDPLoadSync();\n" );
 }
 
-void gDPNoOp()
+void gDPNoOp(const Gwords words)
 {
-	DebugMsg( DEBUG_NORMAL | DEBUG_IGNORED, "gDPNoOp();\n" );
+	const word line = _SHIFTR(words.w0,  0, 16);
+    const char* file = (const char*)words.w1;
+
+	DebugMsg(DEBUG_NORMAL | DEBUG_IGNORED, "gDPNoOp();\n");
+
+	if (line && file) {
+        DebugMsg(DEBUG_NORMAL, "\nLINE %s : %d;\n\n", file, line);
+    }
 }
 
 LLETriangle::LLETriangle()
@@ -1403,7 +1452,7 @@ void LLETriangle::draw(bool _shade, bool _texture, bool _zbuffer, u32 * _pData)
 	}
 }
 
-void gDPTriFill(u32 w0, u32 w1)
+void gDPTriFill(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 8 * sizeof(s32));
@@ -1412,7 +1461,7 @@ void gDPTriFill(u32 w0, u32 w1)
 	DebugMsg( DEBUG_NORMAL, "trifill\n");
 }
 
-void gDPTriShade(u32 w0, u32 w1)
+void gDPTriShade(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 24 * sizeof(s32));
@@ -1421,7 +1470,7 @@ void gDPTriShade(u32 w0, u32 w1)
 	DebugMsg( DEBUG_NORMAL, "trishade\n");
 }
 
-void gDPTriTxtr(u32 w0, u32 w1)
+void gDPTriTxtr(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 8 * sizeof(s32));
@@ -1432,7 +1481,7 @@ void gDPTriTxtr(u32 w0, u32 w1)
 	DebugMsg(DEBUG_NORMAL, "tritxtr\n");
 }
 
-void gDPTriShadeTxtr(u32 w0, u32 w1)
+void gDPTriShadeTxtr(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 40 * sizeof(s32));
@@ -1441,7 +1490,7 @@ void gDPTriShadeTxtr(u32 w0, u32 w1)
 	DebugMsg( DEBUG_NORMAL, "trishadetxtr\n");
 }
 
-void gDPTriFillZ(u32 w0, u32 w1)
+void gDPTriFillZ(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 8 * sizeof(s32));
@@ -1451,7 +1500,7 @@ void gDPTriFillZ(u32 w0, u32 w1)
 	DebugMsg( DEBUG_NORMAL, "trifillz\n");
 }
 
-void gDPTriShadeZ(u32 w0, u32 w1)
+void gDPTriShadeZ(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 24 * sizeof(s32));
@@ -1461,7 +1510,7 @@ void gDPTriShadeZ(u32 w0, u32 w1)
 	DebugMsg( DEBUG_NORMAL, "trishadez\n");
 }
 
-void gDPTriTxtrZ(u32 w0, u32 w1)
+void gDPTriTxtrZ(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 8 * sizeof(s32));
@@ -1472,7 +1521,7 @@ void gDPTriTxtrZ(u32 w0, u32 w1)
 	DebugMsg( DEBUG_NORMAL, "tritxtrz\n");
 }
 
-void gDPTriShadeTxtrZ(u32 w0, u32 w1)
+void gDPTriShadeTxtrZ(word w0, word w1)
 {
 	u32 ewdata[44];
 	memcpy(&ewdata[0], RDP.cmd_data + RDP.cmd_cur, 44 * sizeof(s32));

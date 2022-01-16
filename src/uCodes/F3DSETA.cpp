@@ -21,47 +21,47 @@
 #define F3DSETA_MW_FOG		0x06
 #define F3DSETA_MW_LIGHTCOL	0x08
 
-void F3DSETA_MoveWord(u32 w0, u32 w1)
+void F3DSETA_MoveWord(const Gwords words)
 {
-	switch (_SHIFTR( w0, 8, 8 )) {
+	switch (_SHIFTR( words.w0, 8, 8 )) {
 		case F3DSETA_MW_NUMLIGHT:
-			gSPNumLights( ((w1 - 0x80000000) >> 5) - 1 );
+			gSPNumLights( ((words.w1 - 0x80000000) >> 5) - 1 );
 			break;
 		case F3DSETA_MW_CLIP:
-			gSPClipRatio( w1 );
+			gSPClipRatio( words.w1 );
 			break;
 		case F3DSETA_MW_SEGMENT:
-			gSPSegment( _SHIFTR( w0, 10, 4 ), w1 & 0x00FFFFFF );
+			gSPSegment( _SHIFTR( words.w0, 10, 4 ), SEGMENT_MASK(words.w1) );
 			break;
 		case F3DSETA_MW_FOG:
-			gSPFogFactor( (s16)_SHIFTR( w1, 16, 16 ), (s16)_SHIFTR( w1, 0, 16 ) );
+			gSPFogFactor( (s16)_SHIFTR( words.w1, 16, 16 ), (s16)_SHIFTR( words.w1, 0, 16 ) );
 			break;
 		case F3DSETA_MW_LIGHTCOL:
-			switch (_SHIFTR( w0, 0, 8 ))
+			switch (_SHIFTR( words.w0, 0, 8 ))
 			{
 				case F3D_MWO_aLIGHT_1:
-					gSPLightColor( LIGHT_1, w1 );
+					gSPLightColor( LIGHT_1, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_2:
-					gSPLightColor( LIGHT_2, w1 );
+					gSPLightColor( LIGHT_2, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_3:
-					gSPLightColor( LIGHT_3, w1 );
+					gSPLightColor( LIGHT_3, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_4:
-					gSPLightColor( LIGHT_4, w1 );
+					gSPLightColor( LIGHT_4, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_5:
-					gSPLightColor( LIGHT_5, w1 );
+					gSPLightColor( LIGHT_5, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_6:
-					gSPLightColor( LIGHT_6, w1 );
+					gSPLightColor( LIGHT_6, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_7:
-					gSPLightColor( LIGHT_7, w1 );
+					gSPLightColor( LIGHT_7, words.w1 );
 					break;
 				case F3D_MWO_aLIGHT_8:
-					gSPLightColor( LIGHT_8, w1 );
+					gSPLightColor( LIGHT_8, words.w1 );
 					break;
 			}
 			break;
@@ -70,9 +70,9 @@ void F3DSETA_MoveWord(u32 w0, u32 w1)
 	}
 }
 
-void F3DSETA_Perpnorm(u32 w0, u32 w1)
+void F3DSETA_Perpnorm(const Gwords words)
 {
-	gSPPerspNormalize(w1);
+	gSPPerspNormalize(words.w1);
 }
 
 void F3DSETA_Init()

@@ -24,6 +24,7 @@
 #define M64P_PLUGIN_H
 
 #include "m64p_types.h"
+#include "Types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,9 +40,11 @@ extern "C" {
 
 /***** Structures *****/
 typedef struct {
+#ifndef NATIVE
     unsigned char * RDRAM;
     unsigned char * DMEM;
     unsigned char * IMEM;
+#endif
 
     unsigned int * MI_INTR_REG;
 
@@ -73,16 +76,18 @@ typedef struct {
 
 typedef struct {
     unsigned char * HEADER;  /* This is the rom header (first 40h bytes of the rom) */
+#ifndef NATIVE
     unsigned char * RDRAM;
     unsigned char * DMEM;
     unsigned char * IMEM;
+#endif
 
     unsigned int * MI_INTR_REG;
 
-    unsigned int * DPC_START_REG;
-    unsigned int * DPC_END_REG;
-    unsigned int * DPC_CURRENT_REG;
-    unsigned int * DPC_STATUS_REG;
+    word * DPC_START_REG;
+    word * DPC_END_REG;
+    word * DPC_CURRENT_REG;
+    word * DPC_STATUS_REG;
     unsigned int * DPC_CLOCK_REG;
     unsigned int * DPC_BUFBUSY_REG;
     unsigned int * DPC_PIPEBUSY_REG;
@@ -120,9 +125,11 @@ typedef struct {
 } GFX_INFO;
 
 typedef struct {
+#ifndef NATIVE
     unsigned char * RDRAM;
     unsigned char * DMEM;
     unsigned char * IMEM;
+#endif
 
     unsigned int * MI_INTR_REG;
 

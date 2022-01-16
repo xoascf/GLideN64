@@ -10,31 +10,31 @@
 
 using namespace std;
 
-void F3DEX2ACCLAIM_MoveMem( u32 w0, u32 w1 )
+void F3DEX2ACCLAIM_MoveMem( const Gwords words )
 {
-	switch (_SHIFTR( w0, 0, 8 ))
+	switch (_SHIFTR( words.w0, 0, 8 ))
 	{
 		case F3DEX2_MV_VIEWPORT:
-			gSPViewport( w1 );
+			gSPViewport( words.w1 );
 			break;
 		case G_MV_MATRIX:
-			gSPForceMatrix( w1 );
+			gSPForceMatrix( words.w1 );
 
 			// force matrix takes two commands
 			RSP.PC[RSP.PCi] += 8;
 			break;
 		case G_MV_LIGHT:
 			{
-				const u32 offset = (_SHIFTR(w0, 5, 11))&0x7F8;
+				const u32 offset = (_SHIFTR(words.w0, 5, 11))&0x7F8;
 				if (offset <= 24 * 3) {
 					const u32 n = offset / 24;
 					if (n < 2)
-						gSPLookAt(w1, n);
+						gSPLookAt(words.w1, n);
 					else
-						gSPLight(w1, n - 1);
+						gSPLight(words.w1, n - 1);
 				} else {
 					const u32 n = 2 + (offset - 24 * 4) / 16;
-					gSPLightAcclaim(w1, n);
+					gSPLightAcclaim(words.w1, n);
 				}
 			}
 			break;

@@ -18,6 +18,10 @@
 #include "TextureFilterHandler.h"
 #include "DisplayWindow.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace std;
 
 #define SP_STATUS_HALT 0x0001
@@ -30,7 +34,8 @@ static
 void _ProcessDList()
 {
 	while (!RSP.halt) {
-		if ((RSP.PC[RSP.PCi] + 8) > RDRAMSize) {
+#ifndef NATIVE
+		if ((RSP.PC[RSP.PCi] + sizeof(Gwords)) > RDRAMSize) {
 #ifdef DEBUG_DUMP
 			if ((config.debug.dumpMode & DEBUG_DETAIL) != 0)
 				DebugMsg(DEBUG_DETAIL | DEBUG_ERROR, "// Attempting to execute RSP command at invalid RDRAM location\n");
@@ -41,22 +46,27 @@ void _ProcessDList()
 #endif
 			break;
 		}
-
-		RSP.w0 = *(u32*)&RDRAM[RSP.PC[RSP.PCi]];
-		RSP.w1 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
-		RSP.cmd = _SHIFTR(RSP.w0, 24, 8);
-
-#ifdef DEBUG_DUMP
-		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(RSP.w0, 24, 8), RSP.w0, RSP.w1);
 #endif
 
-		RSP.PC[RSP.PCi] += 8;
-		u32 pci = RSP.PCi;
+#ifdef NATIVE
+        RSP.words = *(Gwords*)(RSP.PC[RSP.PCi]);
+        RSP.cmd = _SHIFTR(RSP.words.w0, 24, 8);
+#else
+		RSP.words = *(Gwords*)&RDRAM[RSP.PC[RSP.PCi]];
+		RSP.cmd = _SHIFTR(RSP.words.w0, 24, 8);
+#endif
+
+#ifdef DEBUG_DUMP
+		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(RSP.words.w0, 24, 8), RSP.words.w0, RSP.words.w1);
+#endif
+
+		RSP.PC[RSP.PCi] += sizeof(Gwords);
+		auto pci = RSP.PCi;
 		if (RSP.count == 1)
 			--pci;
-		RSP.nextCmd = _SHIFTR(*(u32*)&RDRAM[RSP.PC[pci]], 24, 8);
+		RSP.nextCmd = _SHIFTR(*(word*)&RDRAM[RSP.PC[pci]], 24, 8);
 
-		GBI.cmd[RSP.cmd](RSP.w0, RSP.w1);
+		GBI.cmd[RSP.cmd](RSP.words);
 		RSP_CheckDLCounter();
 	}
 }
@@ -65,32 +75,34 @@ static
 void _ProcessDListFactor5()
 {
 	// Lemmy's note: read first 64 bits of this dlist
-	RSP.F5DL[0] = _SHIFTR(*(u32*)&RDRAM[RSP.PC[0]], 0, 24);
-	RSP.PC[0] += 8;
+	RSP.F5DL[0] = _SHIFTR(*(word*)&RDRAM[RSP.PC[0]], 0, 24);
+	RSP.PC[0] += sizeof(Gwords);
 
+#ifndef NATIVE
 	static u32 vAddrToClear[7] = { 0x11C >> 2, 0x120 >> 2, 0x124 >> 2, 0x37C >> 2,
 		0x58C >> 2, 0x5B0 >> 2, 0x5B4 >> 2};
-	u32 * pDmem32 = reinterpret_cast<u32*>(DMEM);
+	word * pDmem32 = reinterpret_cast<word*>(DMEM);
 	for (u32 i = 0; i < 7; ++i)
 		pDmem32[vAddrToClear[i]] = 0U;
+#endif
 
 	while (!RSP.halt) {
-		if ((RSP.PC[RSP.PCi] + 8) > RDRAMSize) {
+		if ((RSP.PC[RSP.PCi] + sizeof(Gwords)) > RDRAMSize) {
 			break;
 		}
 
-		RSP.w0 = *(u32*)&RDRAM[RSP.PC[RSP.PCi]];
-		RSP.w1 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
-		RSP.cmd = _SHIFTR(RSP.w0, 24, 8);
+		RSP.words.w0 = *(word*)&RDRAM[RSP.PC[RSP.PCi]];
+		RSP.words.w1 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + sizeof(word)];
+		RSP.cmd = _SHIFTR(RSP.words.w0, 24, 8);
 
 #ifdef DEBUG_DUMP
-		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(RSP.w0, 24, 8), RSP.w0, RSP.w1);
+		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(RSP.words.w0, 24, 8), RSP.words.w0, RSP.words.w1);
 #endif
 
-		RSP.nextCmd = _SHIFTR(*(u32*)&RDRAM[RSP.PC[RSP.PCi] + 8], 24, 8);
+		RSP.nextCmd = _SHIFTR(*(word*)&RDRAM[RSP.PC[RSP.PCi] + sizeof(Gwords)], 24, 8);
 
-		GBI.cmd[RSP.cmd](RSP.w0, RSP.w1);
-		RSP.PC[RSP.PCi] += 8;
+		GBI.cmd[RSP.cmd](RSP.words);
+		RSP.PC[RSP.PCi] += sizeof(Gwords);
 		RSP_CheckDLCounter();
 	}
 }
@@ -107,9 +119,13 @@ void RSP_CheckDLCounter()
 	}
 }
 
-void RSP_ProcessDList()
+void RSP_ProcessDList(void* displayList, word displayListLength, void* uc_start, void* uc_dstart, word uc_dsize, u32 matrixStackSize, void* ZSortBOSS_pc)
 {
 	RSP.LLE = false;
+
+	if (displayList == nullptr) {
+		return;
+    }
 
 	if (ConfigOpen || dwnd().isResizeWindow()) {
 		*REG.MI_INTR |= MI_INTR_DP;
@@ -126,14 +142,16 @@ void RSP_ProcessDList()
 			dwnd().updateScale();
 		}
 
-		RSP.PC[0] = *(u32*)&DMEM[0x0FF0];
+		RSP.PC[0] = (word)displayList;
 		RSP.PCi = 0;
 		RSP.count = -1;
 
 		RSP.halt = false;
 		RSP.busy = true;
 
-		gSP.matrix.stackSize = min( 32U, *(u32*)&DMEM[0x0FE4] >> 6 );
+
+		gSP.matrix.stackSize = min(32U, matrixStackSize >> 6);
+
 		if (gSP.matrix.stackSize == 0)
 			gSP.matrix.stackSize = 32;
 		gSP.matrix.modelViewi = 0;
@@ -146,22 +164,23 @@ void RSP_ProcessDList()
 		gDPSetTexturePersp(G_TP_PERSP);
 
 		// Get the start of the display list and the length of it
-		const u32 dlist_start = *(u32*)(DMEM + 0xFF0);
-		const u32 dlist_length = *(u32*)(DMEM + 0xFF4);
+        const word dlist_start = *(word*)displayList;
+        const word dlist_length = displayListLength;
+
 		DebugMsg(DEBUG_NORMAL, "--- NEW DLIST --- ucode: %d, fbuf: %08lx, fbuf_width: %d, dlist start: %08lx, dlist_length: %d, x_scale: %f, y_scale: %f\n",
 			GBI.getMicrocodeType(), *REG.VI_ORIGIN, *REG.VI_WIDTH, dlist_start, dlist_length, (*REG.VI_X_SCALE & 0xFFF) / 1024.0f, (*REG.VI_Y_SCALE & 0xFFF) / 1024.0f);
 
-		u32 uc_start = *(u32*)&DMEM[0x0FD0];
-		u32 uc_dstart = *(u32*)&DMEM[0x0FD8];
-		u32 uc_dsize = *(u32*)&DMEM[0x0FDC];
-
-		if ((uc_start != RSP.uc_start) || (uc_dstart != RSP.uc_dstart))
-			gSPLoadUcodeEx(uc_start, uc_dstart, uc_dsize);
+		if (((word)uc_start != RSP.uc_start) || ((word)uc_dstart != RSP.uc_dstart))
+			gSPLoadUcodeEx((word)uc_start, (word)uc_dstart, uc_dsize);
 
 		depthBufferList().setCleared(false);
 
 		if (GBI.getMicrocodeType() == ZSortBOSS) {
-			RSP.PC[1] = *(u32*)&DMEM[0xff8];
+#ifdef NATIVE
+			RSP.PC[1] = (word)ZSortBOSS_pc;
+#else
+			RSP.PC[1] = *(word*)&DMEM[0xff8];
+#endif
 			*REG.SP_STATUS &= ~0x300;  // clear sig1 | sig2
 			*REG.SP_STATUS |= 0x800;   // set sig4
 		}
@@ -200,6 +219,12 @@ void RSP_ProcessDList()
 
 	RSP.busy = false;
 	gDP.changed |= CHANGED_COLORBUFFER;
+}
+
+void RSP_ProcessDList() {
+    RSP_ProcessDList((void*)*(word*)&DMEM[0x0FF0], *(word*)(DMEM + 0xFF4), (void*)*(word*)&DMEM[0x0FD0],
+                     (void*)*(word*)&DMEM[0x0FD8], *(word*)&DMEM[0x0FDC], *(u32*)&DMEM[0x0FE4],
+                     (void*)*(word*)&DMEM[0xff8]);
 }
 
 static
@@ -246,10 +271,11 @@ void setDepthClearColor()
 		DepthClearColor = 0xFFFCFFFC;
 }
 
-void RSP_Init()
+
+void RSP_Init(const char* romName)
 {
 	if (RDRAMSize == 0) {
-#ifdef OS_WINDOWS
+#if defined(OS_WINDOWS) && !defined(NATIVE)
 		// Calculate RDRAM size by intentionally causing an access violation
 		u32 test;
 		try
@@ -273,6 +299,13 @@ void RSP_Init()
 	RSP.LLE = false;
 	RSP.infloop = false;
 
+#ifdef NATIVE
+	RSP.translateSegment = false;
+#endif
+
+#ifdef NATIVE
+	const char* romname = romName;
+#else
 	// get the name of the ROM
 	char romname[21];
 	for (int i = 0; i < 20; ++i)
@@ -282,6 +315,7 @@ void RSP_Init()
 	// remove all trailing spaces
 	while (romname[strlen(romname) - 1] == ' ')
 		romname[strlen(romname) - 1] = 0;
+#endif
 
 	if (strcmp(RSP.romname, romname) != 0)
 		TFH.shutdown();

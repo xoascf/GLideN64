@@ -47,9 +47,25 @@ struct SPVertex
 	s16 flag;
 };
 
+struct S16XYZW
+{
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 w;
+};
+
+typedef struct {
+    S16XYZW vscale; /* scale, 2 bits fraction */
+    S16XYZW vtrans; /* translate, 2 bits fraction */
+    /* both the above arrays are padded to 64-bit boundary */
+} Vp_t;
+
+static_assert(sizeof(Vp_t) == 16, "Vp_t is incorrect size");
+
 struct gSPInfo
 {
-	u32 segment[16];
+	word segment[16];
 
 	struct
 	{
@@ -110,7 +126,7 @@ struct gSPInfo
 
 	struct
 	{
-		u32 address, width, height, format, size, palette;
+		word address, width, height, format, size, palette;
 		f32 imageX, imageY, scaleW, scaleH;
 		u8 clampS, clampT;
 	} bgImage;
@@ -121,7 +137,7 @@ struct gSPInfo
 	struct {
 		u8 sid;
 		u32 flag;
-		u32 addr;
+		word addr;
 	} selectDL;
 	u32 status[4];
 
@@ -149,7 +165,7 @@ struct gSPInfo
 
 extern gSPInfo gSP;
 
-void gSPLoadUcodeEx( u32 uc_start, u32 uc_dstart, u16 uc_dsize );
+void gSPLoadUcodeEx( word uc_start, word uc_dstart, u16 uc_dsize );
 void gSPNoOp();
 void gSPMatrix( u32 matrix, u8 param );
 void gSPDMAMatrix( u32 matrix, u8 index, u8 multiply );
@@ -167,10 +183,10 @@ void gSPT3DUXVertex(u32 v, u32 n, u32 ci);
 void gSPF3DAMVertex( u32 v, u32 n, u32 v0 );
 void gSPSWVertex(const SWVertex * vertex, u32 n, const bool * const verticesToProcess);
 void gSPSWVertex(const SWVertex * vertex, u32 v0, u32 n);
-void gSPDisplayList(u32 dl);
-void gSPBranchList( u32 dl );
-void gSPBranchLessZ(u32 branchdl, u32 vtx, u32 zval);
-void gSPBranchLessW( u32 branchdl, u32 vtx, u32 wval );
+void gSPDisplayList(word dl);
+void gSPBranchList( word dl );
+void gSPBranchLessZ(word branchdl, u32 vtx, u32 zval);
+void gSPBranchLessW( word branchdl, u32 vtx, u32 wval );
 void gSPDlistCount(u32 count, u32 v);
 void gSPSprite2DBase(u32 _base );
 void gSPDMATriangles( u32 tris, u32 n );
@@ -178,7 +194,7 @@ void gSP1Quadrangle( s32 v0, s32 v1, s32 v2, s32 v3 );
 void gSPCullDisplayList( u32 v0, u32 vn );
 void gSPPopMatrix( u32 param );
 void gSPPopMatrixN( u32 param, u32 num );
-void gSPSegment( s32 seg, s32 base );
+void gSPSegment( s32 seg, word base );
 void gSPClipRatio( u32 ratio );
 void gSPInsertMatrix( u32 where, u32 num );
 void gSPModifyVertex(u32 _vtx, u32 _where, u32 _val );
@@ -187,7 +203,7 @@ void gSPLightColor( u32 lightNum, u32 packedColor );
 void gSPFogFactor( s16 fm, s16 fo );
 void gSPPerspNormalize( u16 scale );
 void gSPTexture( f32 sc, f32 tc, u32 level, u32 tile, u32 on );
-void gSPEndDisplayList();
+void gSPEndDisplayList(const Gwords words);
 void gSPGeometryMode( u32 clear, u32 set );
 void gSPSetGeometryMode( u32 mode );
 void gSPClearGeometryMode( u32 mode );

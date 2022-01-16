@@ -11,14 +11,14 @@
 #include "gDP.h"
 #include "GBI.h"
 
-void L3DEX2_Line3D( u32 w0, u32 w1 )
+void L3DEX2_Line3D( const Gwords words )
 {
-	u32 wd = _SHIFTR( (w0 + 1), 0, 8 );
+	u32 wd = _SHIFTR( (words.w0 + 1), 0, 8 );
 
 	if (wd == 0)
-		gSPLine3D( _SHIFTR( w0, 17, 7 ), _SHIFTR( w0, 9, 7 ), 0 );
+		gSPLine3D( _SHIFTR( words.w0, 17, 7 ), _SHIFTR( words.w0, 9, 7 ), 0 );
 	else
-		gSPLineW3D( _SHIFTR( w0, 17, 7 ), _SHIFTR( w0, 9, 7 ), wd, 0 );
+		gSPLineW3D( _SHIFTR( words.w0, 17, 7 ), _SHIFTR( words.w0, 9, 7 ), wd, 0 );
 }
 
 void L3DEX2_Init()

@@ -19,6 +19,10 @@
 #include <Graphics/PixelBuffer.h>
 #include <DisplayWindow.h>
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace graphics;
 
 #define DEPTH_TEX_WIDTH 640

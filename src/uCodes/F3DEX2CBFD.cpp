@@ -12,15 +12,15 @@
 #include "GBI.h"
 
 static
-void F3DEX2CBFD_Vtx( u32 w0, u32 w1 )
+void F3DEX2CBFD_Vtx( const Gwords words )
 {
-	u32 n = _SHIFTR( w0, 12, 8 );
+	u32 n = _SHIFTR( words.w0, 12, 8 );
 
-	gSPCBFDVertex( w1, n, _SHIFTR( w0, 1, 7 ) - n );
+	gSPCBFDVertex(words.w1, n, _SHIFTR(words.w0, 1, 7) - n);
 }
 
 static
-void F3DEX2CBFD_CoordMod(u32 _w0, u32 _w1)
+void F3DEX2CBFD_CoordMod(word _w0, word _w1)
 {
 	DebugMsg(DEBUG_NORMAL, "gSPCoordMod( %u, %u );\n", _w0, _w1);
 	if ((_w0 & 8) != 0)
@@ -44,67 +44,67 @@ void F3DEX2CBFD_CoordMod(u32 _w0, u32 _w1)
 }
 
 static
-void F3DEX2CBFD_MoveWord( u32 w0, u32 w1 )
+void F3DEX2CBFD_MoveWord( const Gwords words )
 {
-	switch (_SHIFTR( w0, 16, 8 ))
+	switch (_SHIFTR( words.w0, 16, 8 ))
 	{
 		case G_MW_NUMLIGHT:
-			gSPNumLights( w1 / 48 );
+			gSPNumLights( words.w1 / 48 );
 			break;
 		case G_MW_CLIP:
-			gSPClipRatio( w1 );
+			gSPClipRatio( words.w1 );
 			break;
 		case G_MW_SEGMENT:
-			gSPSegment( _SHIFTR( w0, 0, 16 ) >> 2, w1 & 0x00FFFFFF );
+			gSPSegment( _SHIFTR( words.w0, 0, 16 ) >> 2, SEGMENT_MASK(words.w1) );
 			break;
 		case G_MW_FOG:
-			gSPFogFactor( (s16)_SHIFTR( w1, 16, 16 ), (s16)_SHIFTR( w1, 0, 16 ) );
+			gSPFogFactor( (s16)_SHIFTR( words.w1, 16, 16 ), (s16)_SHIFTR( words.w1, 0, 16 ) );
 			break;
 		case G_MW_PERSPNORM:
-			gSPPerspNormalize( w1 );
+			gSPPerspNormalize( words.w1 );
 			break;
 		case G_MW_COORD_MOD:
-			F3DEX2CBFD_CoordMod( w0, w1 );
+			F3DEX2CBFD_CoordMod( words.w0, words.w1 );
 			break;
 	}
 }
 
 static
-void F3DEX2CBFD_MoveMem( u32 w0, u32 w1 )
+void F3DEX2CBFD_MoveMem( const Gwords words )
 {
-	switch (_SHIFTR( w0, 0, 8 ))
+	switch (_SHIFTR( words.w0, 0, 8 ))
 	{
 		case F3DEX2_MV_VIEWPORT:
-			gSPViewport( w1 );
+			gSPViewport( words.w1 );
 			break;
 		case G_MV_LIGHT:
 			{
-			const u32 offset = _SHIFTR(w0, 5, 14);
+			const u32 offset = _SHIFTR(words.w0, 5, 14);
 			const u32 n = offset / 48;
 			if (n < 2)
-				gSPLookAt(w1, n);
+				gSPLookAt(words.w1, n);
 			else
-				gSPLightCBFD(w1, n - 2);
+				gSPLightCBFD(words.w1, n - 2);
 			}
 			break;
 		case G_MV_NORMALES:
-			gSP.cbfd.vertexNormalBase = RSP_SegmentToPhysical(w1);
-			DebugMsg(DEBUG_NORMAL, "gSPSetVertexNormaleBase( 0x%08X );\n", w1);
+			gSP.cbfd.vertexNormalBase = RSP_SegmentToPhysical(words.w1);
+			DebugMsg(DEBUG_NORMAL, "gSPSetVertexNormaleBase( 0x%08X );\n", words.w1);
 			break;
 	}
 }
 
 static
-void F3DEX2CBFD_Tri4( u32 w0, u32 w1 )
+void F3DEX2CBFD_Tri4( const Gwords words )
 {
-	gSP4Triangles( _SHIFTR( w0, 23, 5 ), _SHIFTR( w0, 18, 5 ), (_SHIFTR( w0, 15, 3 )<<2)|_SHIFTR( w1, 30, 2 ),
-				   _SHIFTR( w0, 10, 5 ), _SHIFTR( w0,  5, 5 ), _SHIFTR( w0,  0, 5 ),
-				   _SHIFTR( w1, 25, 5 ), _SHIFTR( w1, 20, 5 ), _SHIFTR( w1, 15, 5 ),
-				   _SHIFTR( w1, 10, 5 ), _SHIFTR( w1,  5, 5 ), _SHIFTR( w1,  0, 5 ) );
+	gSP4Triangles( _SHIFTR( words.w0, 23, 5 ), _SHIFTR( words.w0, 18, 5 ), (_SHIFTR( words.w0, 15, 3 )<<2)|_SHIFTR( words.w1, 30, 2 ),
+				   _SHIFTR( words.w0, 10, 5 ), _SHIFTR( words.w0,  5, 5 ), _SHIFTR( words.w0,  0, 5 ),
+				   _SHIFTR( words.w1, 25, 5 ), _SHIFTR( words.w1, 20, 5 ), _SHIFTR( words.w1, 15, 5 ),
+				   _SHIFTR( words.w1, 10, 5 ), _SHIFTR( words.w1,  5, 5 ), _SHIFTR( words.w1,  0, 5 ) );
 }
 
 static
-void F3DEX2CBFD_SwitchLightingMode(u32, u32)
+void F3DEX2CBFD_SwitchLightingMode(const Gwords words)
 {
 	gSP.cbfd.advancedLighting = true;
 }

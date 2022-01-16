@@ -5,43 +5,43 @@
 #include "F3DAM.h"
 #include "gSP.h"
 
-void F3DAM_MoveWord(u32 w0, u32 w1)
+void F3DAM_MoveWord( const Gwords words )
 {
-	switch (_SHIFTR(w0, 16, 8))	{
+	switch (_SHIFTR(words.w0, 16, 8))	{
 	case G_MW_FOG:
-		switch (_SHIFTR(w0, 0, 8)) {
+		switch (_SHIFTR(words.w0, 0, 8)) {
 		case 0:
-			gSPFogFactor((s16)_SHIFTR(w1, 16, 16), (s16)_SHIFTR(w1, 0, 16));
+			gSPFogFactor((s16)_SHIFTR(words.w1, 16, 16), (s16)_SHIFTR(words.w1, 0, 16));
 			break;
 		case 0x0C:
-			gSP.textureCoordScale[0] = w1;
+			gSP.textureCoordScale[0] = words.w1;
 			break;
 		case 0x10:
-			gSP.textureCoordScale[1] = w1;
+			gSP.textureCoordScale[1] = words.w1;
 			break;
 		}
 		break;
 	default:
-		F3DEX2_MoveWord(w0, w1);
+		F3DEX2_MoveWord(words);
 		break;
 	}
 }
 
-void F3DAM_Vtx( u32 w0, u32 w1 )
+void F3DAM_Vtx( const Gwords words )
 {
-	u32 n = _SHIFTR( w0, 12, 8 );
+	u32 n = _SHIFTR( words.w0, 12, 8 );
 
-	gSPF3DAMVertex( w1, n, _SHIFTR( w0, 1, 7 ) - n );
+	gSPF3DAMVertex( words.w1, n, _SHIFTR( words.w0, 1, 7 ) - n );
 }
 
-void F3DAM_Texture( u32 w0, u32 w1 )
+void F3DAM_Texture( const Gwords words )
 {
-	gSP.textureCoordScaleOrg = w1;
+	gSP.textureCoordScaleOrg = words.w1;
 	gSPTexture( 1.0f,
 				1.0f,
-				_SHIFTR( w0, 11, 3 ),
-				_SHIFTR( w0, 8, 3 ),
-				_SHIFTR( w0, 1, 7 ) );
+				_SHIFTR( words.w0, 11, 3 ),
+				_SHIFTR( words.w0, 8, 3 ),
+				_SHIFTR( words.w0, 1, 7 ) );
 }
 
 void F3DAM_Init()

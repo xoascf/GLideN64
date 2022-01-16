@@ -36,7 +36,7 @@ public:
 	void ProcessDList();
 	void ProcessRDPList();
 	void RomClosed();
-	int RomOpen();
+	int RomOpen(const char* romName = nullptr);
 	void ShowCFB();
 	void UpdateScreen();
 	int InitiateGFX(const GFX_INFO & _gfxInfo);

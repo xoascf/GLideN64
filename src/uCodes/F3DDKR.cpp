@@ -9,90 +9,90 @@
 #include "gDP.h"
 #include "GBI.h"
 
-void F3DDKR_DMA_Mtx( u32 w0, u32 w1 )
+void F3DDKR_DMA_Mtx( const Gwords words )
 {
-	if (_SHIFTR( w0, 0, 16 ) != 64) {
-		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "G_MTX: address = 0x%08X    length = %i    params = 0x%02X\n", w1, _SHIFTR(w0, 0, 16), _SHIFTR(w0, 16, 8));
+	if (_SHIFTR( words.w0, 0, 16 ) != 64) {
+		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "G_MTX: address = 0x%08X    length = %i    params = 0x%02X\n", words.w1, _SHIFTR(words.w0, 0, 16), _SHIFTR(words.w0, 16, 8));
 		return;
 	}
 
-	u32 index = _SHIFTR( w0, 16, 4 );
+	u32 index = _SHIFTR( words.w0, 16, 4 );
 	u32 multiply;
 
 	if (index == 0) {// DKR
-		index = _SHIFTR( w0, 22, 2 );
+		index = _SHIFTR( words.w0, 22, 2 );
 		multiply = 0;
 	}
 	else { // JFG
-		multiply = _SHIFTR( w0, 23, 1 );
+		multiply = _SHIFTR( words.w0, 23, 1 );
 	}
 
-	gSPDMAMatrix( w1, index, multiply );
+	gSPDMAMatrix( words.w1, index, multiply );
 }
 
-void F3DDKR_DMA_Vtx( u32 w0, u32 w1 )
+void F3DDKR_DMA_Vtx( const Gwords words )
 {
-	if ((w0 & F3DDKR_VTX_APPEND)) {
+	if ((words.w0 & F3DDKR_VTX_APPEND)) {
 		if (gSP.matrix.billboard)
 			gSP.vertexi = 1;
 	} else
 		gSP.vertexi = 0;
 
-	u32 n = _SHIFTR( w0, 19, 5 ) + 1;
+	u32 n = _SHIFTR( words.w0, 19, 5 ) + 1;
 
-	gSPDMAVertex( w1, n, gSP.vertexi + _SHIFTR( w0, 9, 5 ) );
+	gSPDMAVertex( words.w1, n, gSP.vertexi + _SHIFTR( words.w0, 9, 5 ) );
 
 	gSP.vertexi += n;
 }
 
-void F3DJFG_DMA_Vtx(u32 w0, u32 w1)
+void F3DJFG_DMA_Vtx(const Gwords words)
 {
-	if ((w0 & F3DDKR_VTX_APPEND)) {
+	if ((words.w0 & F3DDKR_VTX_APPEND)) {
 		if (gSP.matrix.billboard)
 			gSP.vertexi = 1;
 	} else
 		gSP.vertexi = 0;
 
-	u32 n = _SHIFTR(w0, 19, 5);
+	u32 n = _SHIFTR(words.w0, 19, 5);
 
-	gSPDMAVertex(w1, n, gSP.vertexi + _SHIFTR(w0, 9, 5));
+	gSPDMAVertex(words.w1, n, gSP.vertexi + _SHIFTR(words.w0, 9, 5));
 
 	gSP.vertexi += n;
 }
 
-void F3DDKR_DMA_Tri(u32 w0, u32 w1)
+void F3DDKR_DMA_Tri(const Gwords words)
 {
-	gSPDMATriangles( w1, _SHIFTR( w0, 4, 12 ) );
+	gSPDMATriangles( words.w1, _SHIFTR( words.w0, 4, 12 ) );
 	gSP.vertexi = 0;
 }
 
-void F3DDKR_DMA_DList( u32 w0, u32 w1 )
+void F3DDKR_DMA_DList( const Gwords words )
 {
-	gSPDlistCount(_SHIFTR(w0, 16, 8), w1);
+	gSPDlistCount(_SHIFTR(words.w0, 16, 8), words.w1);
 }
 
-void F3DDKR_DMA_Offsets( u32 w0, u32 w1 )
+void F3DDKR_DMA_Offsets( const Gwords words )
 {
-	gSPSetDMAOffsets( _SHIFTR( w0, 0, 24 ), _SHIFTR( w1, 0, 24 ) );
+	gSPSetDMAOffsets( _SHIFTR( words.w0, 0, 24 ), _SHIFTR( words.w1, 0, 24 ) );
 }
 
-void F3DDKR_DMA_Tex_Offset(u32 w0, u32 w1)
+void F3DDKR_DMA_Tex_Offset(const Gwords words)
 {
-	gSPSetDMATexOffset(w1);
+	gSPSetDMATexOffset(words.w1);
 }
 
-void F3DDKR_MoveWord( u32 w0, u32 w1 )
+void F3DDKR_MoveWord( const Gwords words )
 {
-	switch (_SHIFTR( w0, 0, 8 )) {
+	switch (_SHIFTR( words.w0, 0, 8 )) {
 		case 0x02:
-			gSP.matrix.billboard = w1 & 1;
+			gSP.matrix.billboard = words.w1 & 1;
 			break;
 		case 0x0A:
-			gSP.matrix.modelViewi = _SHIFTR( w1, 6, 2 );
+			gSP.matrix.modelViewi = _SHIFTR( words.w1, 6, 2 );
 			gSP.changed |= CHANGED_MATRIX;
 			break;
 		default:
-			F3D_MoveWord( w0, w1 );
+			F3D_MoveWord(words);
 			break;
 	}
 }

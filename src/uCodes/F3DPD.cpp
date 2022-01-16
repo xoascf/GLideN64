@@ -8,14 +8,14 @@
 
 #define F3DPD_VTXCOLORBASE	0x07
 
-void F3DPD_Vtx( u32 w0, u32 w1 )
+void F3DPD_Vtx( const Gwords words )
 {
-	gSPCIVertex( w1, _SHIFTR( w0, 20, 4 ) + 1, _SHIFTR( w0, 16, 4 ) );
+	gSPCIVertex( words.w1, _SHIFTR( words.w0, 20, 4 ) + 1, _SHIFTR( words.w0, 16, 4 ) );
 }
 
-void F3DPD_VtxColorBase( u32 w0, u32 w1 )
+void F3DPD_VtxColorBase( const Gwords words )
 {
-	gSPSetVertexColorBase( w1 );
+	gSPSetVertexColorBase( words.w1 );
 }
 
 void F3DPD_Init()

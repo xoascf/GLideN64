@@ -14,158 +14,158 @@
 
 using namespace std;
 
-void F3DEX2_Mtx( u32 w0, u32 w1 )
+void F3DEX2_Mtx( const Gwords words )
 {
-	gSPMatrix( w1, _SHIFTR( w0, 0, 8 ) ^ G_MTX_PUSH );
+	gSPMatrix( words.w1, _SHIFTR( words.w0, 0, 8 ) ^ G_MTX_PUSH );
 }
 
-void F3DEX2_MoveMem( u32 w0, u32 w1 )
+void F3DEX2_MoveMem( const Gwords words )
 {
-	switch (_SHIFTR( w0, 0, 8 ))
+	switch (_SHIFTR( words.w0, 0, 8 ))
 	{
 		case F3DEX2_MV_VIEWPORT:
-			gSPViewport( w1 );
+			gSPViewport( words.w1 );
 			break;
 		case G_MV_MATRIX:
-			gSPForceMatrix( w1 );
+			gSPForceMatrix( words.w1 );
 
 			// force matrix takes two commands
 			RSP.PC[RSP.PCi] += 8;
 			break;
 		case G_MV_LIGHT:
 			{
-			const u32 offset = (_SHIFTR(w0, 5, 11))&0x7F8;
+			const u32 offset = (_SHIFTR(words.w0, 5, 11))&0x7F8;
 			const u32 n = offset / 24;
 			if (n < 2)
-				gSPLookAt(w1, n);
+				gSPLookAt(words.w1, n);
 			else
-				gSPLight(w1, n - 1);
+				gSPLight(words.w1, n - 1);
 			}
 			break;
 	}
 }
 
-void F3DEX2_Vtx( u32 w0, u32 w1 )
+void F3DEX2_Vtx( const Gwords words )
 {
-	u32 n = _SHIFTR( w0, 12, 8 );
+	u32 n = _SHIFTR( words.w0, 12, 8 );
 
-	gSPVertex( w1, n, _SHIFTR( w0, 1, 7 ) - n );
+	gSPVertex( words.w1, n, _SHIFTR( words.w0, 1, 7 ) - n );
 }
 
-void F3DEX2_Reserved1( u32 w0, u32 w1 )
+void F3DEX2_Reserved1( const Gwords words )
 {
 }
 
-void F3DEX2_Tri1( u32 w0, u32 w1 )
+void F3DEX2_Tri1( const Gwords words )
 {
-	gSP1Triangle( _SHIFTR( w0, 17, 7 ),
-				  _SHIFTR( w0, 9, 7 ),
-				  _SHIFTR( w0, 1, 7 ));
+	gSP1Triangle( _SHIFTR( words.w0, 17, 7 ),
+				  _SHIFTR( words.w0, 9, 7 ),
+				  _SHIFTR( words.w0, 1, 7 ));
 }
 
-void F3DEX2_Line3D( u32 w0, u32 w1 )
+void F3DEX2_Line3D( const Gwords words )
 {
 	assert(false);
 }
 
-void F3DEX2_PopMtx( u32 w0, u32 w1 )
+void F3DEX2_PopMtx( const Gwords words )
 {
-	gSPPopMatrixN( 0, w1 >> 6 );
+	gSPPopMatrixN( 0, words.w1 >> 6 );
 }
 
-void F3DEX2_MoveWord( u32 w0, u32 w1 )
+void F3DEX2_MoveWord( const Gwords words )
 {
-	switch (_SHIFTR( w0, 16, 8 ))
+	switch (_SHIFTR( words.w0, 16, 8 ))
 	{
 		case G_MW_FORCEMTX:
-			if (w1 == 0)
+			if (words.w1 == 0)
 				gSP.changed |= CHANGED_MATRIX;
 			else
 				gSP.changed &= ~CHANGED_MATRIX;
 			break;
 		case G_MW_MATRIX:
-			gSPInsertMatrix( _SHIFTR( w0, 0, 16 ), w1 );
+			gSPInsertMatrix( _SHIFTR( words.w0, 0, 16 ), words.w1 );
 			break;
 		case G_MW_NUMLIGHT:
-			gSPNumLights( w1 / 24 );
+			gSPNumLights( words.w1 / 24 );
 			break;
 		case G_MW_CLIP:
-			gSPClipRatio( w1 );
+			gSPClipRatio( words.w1 );
 			break;
 		case G_MW_SEGMENT:
-			gSPSegment( _SHIFTR( w0, 2, 4 ) , w1 & 0x00FFFFFF );
+			gSPSegment( _SHIFTR( words.w0, 2, 4 ) , SEGMENT_MASK(words.w1) );
 			break;
 		case G_MW_FOG:
-			gSPFogFactor( (s16)_SHIFTR( w1, 16, 16 ), (s16)_SHIFTR( w1, 0, 16 ) );
+			gSPFogFactor( (s16)_SHIFTR( words.w1, 16, 16 ), (s16)_SHIFTR( words.w1, 0, 16 ) );
 			break;
 		case G_MW_LIGHTCOL:
-			gSPLightColor((_SHIFTR( w0, 0, 16 ) / 24) + 1, w1 );
+			gSPLightColor((_SHIFTR( words.w0, 0, 16 ) / 24) + 1, words.w1 );
 			break;
 		case G_MW_PERSPNORM:
-			gSPPerspNormalize( w1 );
+			gSPPerspNormalize( words.w1 );
 			break;
 	}
 }
 
-void F3DEX2_Texture( u32 w0, u32 w1 )
+void F3DEX2_Texture( const Gwords words )
 {
-	gSPTexture( _FIXED2FLOAT( _SHIFTR( w1, 16, 16 ), 16 ),
-				_FIXED2FLOAT( _SHIFTR( w1, 0, 16 ), 16 ),
-				_SHIFTR( w0, 11, 3 ),
-				_SHIFTR( w0, 8, 3 ),
-				_SHIFTR( w0, 1, 7 ) );
+	gSPTexture( _FIXED2FLOAT( _SHIFTR( words.w1, 16, 16 ), 16 ),
+				_FIXED2FLOAT( _SHIFTR( words.w1, 0, 16 ), 16 ),
+				_SHIFTR( words.w0, 11, 3 ),
+				_SHIFTR( words.w0, 8, 3 ),
+				_SHIFTR( words.w0, 1, 7 ) );
 }
 
-void F3DEX2_SetOtherMode_H( u32 w0, u32 w1 )
+void F3DEX2_SetOtherMode_H( const Gwords words )
 {
-	const u32 length = _SHIFTR(w0, 0, 8) + 1;
-	const u32 shift = max(0, (s32)(32 - _SHIFTR(w0, 8, 8) - length));
-	gSPSetOtherMode_H(length, shift, w1);
+	const u32 length = _SHIFTR(words.w0, 0, 8) + 1;
+	const u32 shift = max(0, (s32)(32 - _SHIFTR(words.w0, 8, 8) - length));
+	gSPSetOtherMode_H(length, shift, words.w1);
 }
 
-void F3DEX2_SetOtherMode_L( u32 w0, u32 w1 )
+void F3DEX2_SetOtherMode_L( const Gwords words )
 {
-	const u32 length = _SHIFTR(w0, 0, 8) + 1;
-	const u32 shift = max(0, (s32)(32 - _SHIFTR(w0, 8, 8) - length));
-	gSPSetOtherMode_L(length, shift, w1);
+	const u32 length = _SHIFTR(words.w0, 0, 8) + 1;
+	const u32 shift = max(0, (s32)(32 - _SHIFTR(words.w0, 8, 8) - length));
+	gSPSetOtherMode_L(length, shift, words.w1);
 }
 
-void F3DEX2_GeometryMode( u32 w0, u32 w1 )
+void F3DEX2_GeometryMode( const Gwords words )
 {
-	gSPGeometryMode( ~_SHIFTR( w0, 0, 24 ), w1 );
+	gSPGeometryMode( ~_SHIFTR( words.w0, 0, 24 ), words.w1 );
 }
 
-void F3DEX2_DMAIO( u32 w0, u32 w1 )
+void F3DEX2_DMAIO( const Gwords words )
 {
-	gSP.DMAIO_address = RSP_SegmentToPhysical(w1);
+	gSP.DMAIO_address = RSP_SegmentToPhysical(words.w1);
 }
 
-void F3DEX2_Special_1( u32 w0, u32 w1 )
+void F3DEX2_Special_1( const Gwords words )
 {
-	const u32 param = _SHIFTR(w0, 0, 8);
+	const u32 param = _SHIFTR(words.w0, 0, 8);
 	if (GBI.isCombineMatrices())
 		gSPCombineMatrices(param);
 	else
-		gSPDlistCount(param, w1);
+		gSPDlistCount(param, words.w1);
 }
 
-void F3DEX2_Special_2( u32 w0, u32 w1 )
+void F3DEX2_Special_2( const Gwords words )
 {
 }
 
-void F3DEX2_Special_3( u32 w0, u32 w1 )
+void F3DEX2_Special_3( const Gwords words )
 {
 }
 
-void F3DEX2_Quad( u32 w0, u32 w1 )
+void F3DEX2_Quad( const Gwords words )
 {
-	gSP2Triangles( _SHIFTR( w0, 17, 7 ),
-				   _SHIFTR( w0, 9, 7 ),
-				   _SHIFTR( w0, 1, 7 ),
+	gSP2Triangles( _SHIFTR( words.w0, 17, 7 ),
+				   _SHIFTR( words.w0, 9, 7 ),
+				   _SHIFTR( words.w0, 1, 7 ),
 				   0,
-				   _SHIFTR( w1, 17, 7 ),
-				   _SHIFTR( w1, 9, 7 ),
-				   _SHIFTR( w1, 1, 7 ),
+				   _SHIFTR( words.w1, 17, 7 ),
+				   _SHIFTR( words.w1, 9, 7 ),
+				   _SHIFTR( words.w1, 1, 7 ),
 				   0 );
 }
 

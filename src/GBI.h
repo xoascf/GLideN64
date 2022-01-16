@@ -253,6 +253,8 @@ extern u32 G_MWO_aLIGHT_8, G_MWO_bLIGHT_8;
 #define G_TEXRECTFLIP			0xE5	/* -27 */
 #define G_TEXRECT				0xE4	/* -28 */
 
+#define G_MARK_SEGMENT			0x30
+
 #define G_RDPNOOP				0xC0
 
 #define G_TRI_FILL				0xC8	/* fill triangle:            11001000 */
@@ -414,6 +416,33 @@ extern u32 G_ZOBJ, G_ZRDPCMD, G_ZWAITSIGNAL, G_ZMTXCAT, G_ZMULT_MPMTX, G_ZLIGHTI
 #define G_DL_PUSH		0x00
 #define G_DL_NOPUSH		0x01
 
+#ifdef NATIVE
+typedef struct {
+    s16 x;
+    s16 y;
+    s16 z;
+
+	u16 flag;
+
+    s16 s;
+    s16 t;
+
+    union {
+        struct {
+            u8 r;
+            u8 g;
+            u8 b;
+            u8 a;
+        } color;
+        struct {
+            s8 x;
+            s8 y; // r
+            s8 z; // g
+            s8 a; // b
+        } normal;
+    };
+} Vertex;
+#else
 typedef struct
 {
 	s16 y;
@@ -442,7 +471,17 @@ typedef struct
 		} normal;
 	};
 } Vertex;
+#endif
 
+#ifdef NATIVE
+typedef struct
+{
+	s16 x, y;
+	s16 z;
+	u16	ci;
+	s16 s, t;
+} PDVertex;
+#else
 typedef struct
 {
 	s16 y, x;
@@ -450,7 +489,17 @@ typedef struct
 	s16 z;
 	s16 t, s;
 } PDVertex;
+#endif
 
+#ifdef NATIVE
+typedef struct
+{
+	u8		v2, v1, v0, flag;
+	s16		s0, t0;
+	s16		s1, t1;
+	s16		s2, t2;
+} DKRTriangle;
+#else
 typedef struct
 {
 	u8		v2, v1, v0, flag;
@@ -458,28 +507,47 @@ typedef struct
 	s16		t1, s1;
 	s16		t2, s2;
 } DKRTriangle;
+#endif
 
+#ifdef NATIVE
+typedef struct
+{
+	s16 x, y;
+	s16 z;
+	u16 flag;
+} SWVertex;
+#else
 typedef struct
 {
 	s16 y, x;
 	u16 flag;
 	s16 z;
 } SWVertex;
+#endif
 
+#ifdef NATIVE
+struct Light
+{
+	u8 r, g, b, pad0;
+	u8 r2, g2, b2, pad1;
+	s8 x, y, z, pad2;
+};
+#else
 struct Light
 {
 	u8 pad0, b, g, r;
 	u8 pad1, b2, g2, r2;
 	s8 pad2, z, y, x;
 };
+#endif
 
 // GBI commands
-typedef void (*GBIFunc)( u32 w0, u32 w1 );
+typedef void (*GBIFunc)( const Gwords words );
 
 struct MicrocodeInfo
 {
-	u32 address = 0;
-	u32 dataAddress = 0;;
+	word address = 0;
+	word dataAddress = 0;;
 	u16 dataSize = 0;
 	u32 type = NONE;
 	bool NoN = false;
@@ -499,7 +567,7 @@ struct GBIInfo
 
 	void init();
 	void destroy();
-	void loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize);
+	void loadMicrocode(word uc_start, word uc_dstart, u16 uc_dsize);
 	u32 getMicrocodeType() const {return m_pCurrent != nullptr ? m_pCurrent->type : NONE;}
 	bool isHWLSupported() const;
 	void setHWLSupported(bool _supported);
@@ -514,7 +582,7 @@ private:
 	void _flushCommands();
 
 	void _makeCurrent(MicrocodeInfo * _pCurrent);
-	bool _makeExistingMicrocodeCurrent(u32 uc_start, u32 uc_dstart, u32 uc_dsize);
+	bool _makeExistingMicrocodeCurrent(word uc_start, word uc_dstart, u32 uc_dsize);
 
 	bool m_hwlSupported;
 	MicrocodeInfo * m_pCurrent;

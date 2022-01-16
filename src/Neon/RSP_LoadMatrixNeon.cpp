@@ -3,7 +3,7 @@
 #include "arm_neon.h"
 #include "GBI.h"
 
-void RSP_LoadMatrix( f32 mtx[4][4], u32 address )
+void RSP_LoadMatrix( f32 mtx[4][4], word address )
 {
     f32 recip = FIXED2FLOATRECIP16;
 

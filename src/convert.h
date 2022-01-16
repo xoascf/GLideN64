@@ -11,12 +11,15 @@ extern const volatile unsigned char Two2Eight[4];
 extern const volatile unsigned char One2Four[2];
 extern const volatile unsigned char One2Eight[2];
 
-void UnswapCopyWrap(const u8 *src, u32 srcIdx, u8 *dest, u32 destIdx, u32 destMask, u32 numBytes);
+void UnswapCopyWrap(const u8 *src, word srcIdx, u8 *dest, word destIdx, word destMask, word numBytes);
 
 void DWordInterleaveWrap(u32 *src, u32 srcIdx, u32 srcMask, u32 numQWords);
 
 inline u16 swapword( u16 value )
 {
+#ifdef NATIVE2
+	return value;
+#else
 #ifdef WIN32_ASM
 	__asm
 	{
@@ -26,6 +29,7 @@ inline u16 swapword( u16 value )
 #else // WIN32_ASM
 	return (value << 8) | (value >> 8);
 #endif // WIN32_ASM
+#endif
 }
 
 inline u16 RGBA8888_RGBA4444( u32 color )

@@ -1,3 +1,4 @@
+#define WGL_WGLEXT_PROTOTYPES
 #include "WindowsWGL.h"
 #include <Config.h>
 #include <GLideN64.h>
@@ -46,9 +47,9 @@ bool WindowsWGL::start()
 	}
 
 	if ((SetPixelFormat(hDC, pixelFormat, &pfd)) == FALSE) {
+        auto err = GetLastError();
+        auto currentFormat = GetPixelFormat(hDC);
 		MessageBoxW(hWnd, L"Error while setting pixel format!", pluginNameW, MB_ICONERROR | MB_OK);
-		stop();
-		return false;
 	}
 
 	if ((hRC = wglCreateContext(hDC)) == NULL) {

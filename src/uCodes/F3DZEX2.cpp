@@ -7,9 +7,9 @@
 
 #define	F3DZEX2_BRANCH_W	0x04
 
-void F3DZEX2_Branch_W( u32 w0, u32 w1 )
+void F3DZEX2_Branch_W( const Gwords words )
 {
-	gSPBranchLessW(gDP.half_1, _SHIFTR( w0, 1, 7 ), w1);
+	gSPBranchLessW(gDP.half_1, _SHIFTR( words.w0, 1, 7 ), words.w1);
 }
 
 void F3DZEX2_Init()

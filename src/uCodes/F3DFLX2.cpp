@@ -8,10 +8,14 @@
 #include "gSP.h"
 #include "DebugDump.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 inline
 void F3DFLX2_LoadAlphaLight(u32 _a)
 {
-	const u32 address = RSP_SegmentToPhysical(_a);
+	const word address = RSP_SegmentToPhysical(_a);
 
 	const s16* const data = reinterpret_cast<const s16*>(RDRAM + address);
 
@@ -30,22 +34,22 @@ void F3DFLX2_LoadAlphaLight(u32 _a)
 }
 
 static
-void F3DFLX2_MoveMem(u32 w0, u32 w1)
+void F3DFLX2_MoveMem(const Gwords words)
 {
-	switch (_SHIFTR(w0, 0, 8))
+	switch (_SHIFTR(words.w0, 0, 8))
 	{
 	case G_MV_LIGHT:
 	{
-		const u32 offset = (w0 >> 5) & 0x7F8;
+		const u32 offset = (words.w0 >> 5) & 0x7F8;
 		const u32 n = offset / 24;
 		if (n == 1)
-			F3DFLX2_LoadAlphaLight(w1);
+			F3DFLX2_LoadAlphaLight(words.w1);
 		else
-			gSPLight(w1, n - 1);
+			gSPLight(words.w1, n - 1);
 	}
 		break;
 	default:
-		F3DEX2_MoveMem(w0, w1);
+		F3DEX2_MoveMem(words);
 		break;
 	}
 }

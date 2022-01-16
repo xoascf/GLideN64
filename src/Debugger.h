@@ -84,11 +84,11 @@ private:
 	struct TriInfo {
 		std::array<Vertex, 3> vertices;
 		gDPCombine combine; 	// Combine mode at the time of rendering
-		u32 cycle_type;
+		word cycle_type;
 		gDPInfo::OtherMode otherMode;
-		u32	geometryMode;	// geometry mode flags
-		u32 frameBufferAddress;
-		u32	tri_n;		// Triangle number
+		word	geometryMode;	// geometry mode flags
+		word frameBufferAddress;
+		word tri_n;		// Triangle number
 
 		TriangleType type;	// 0-normal, 1-texrect, 2-fillrect
 

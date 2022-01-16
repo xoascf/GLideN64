@@ -241,10 +241,10 @@ void FrameBuffer_Init();
 void FrameBuffer_Destroy();
 void FrameBuffer_CopyToRDRAM( u32 _address , bool _sync );
 void FrameBuffer_CopyChunkToRDRAM(u32 _address);
-void FrameBuffer_CopyFromRDRAM(u32 address, bool bUseAlpha);
-void FrameBuffer_AddAddress(u32 address, u32 _size);
-bool FrameBuffer_CopyDepthBuffer(u32 address);
-bool FrameBuffer_CopyDepthBufferChunk(u32 address);
+void FrameBuffer_CopyFromRDRAM(word address, bool bUseAlpha);
+void FrameBuffer_AddAddress(word address, u32 _size);
+bool FrameBuffer_CopyDepthBuffer(word address);
+bool FrameBuffer_CopyDepthBufferChunk(word address);
 void FrameBuffer_ActivateBufferTexture(u32 t, u32 _frameBufferAddress);
 void FrameBuffer_ActivateBufferTextureBG(u32 t, u32 _frameBufferAddress);
 

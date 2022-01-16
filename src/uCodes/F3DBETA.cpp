@@ -10,32 +10,32 @@
 #include "gDP.h"
 #include "GBI.h"
 
-void F3DBETA_Vtx( u32 w0, u32 w1 )
+void F3DBETA_Vtx( const Gwords words )
 {
-	gSPVertex( w1, _SHIFTR( w0, 9, 7 ), _SHIFTR( w0, 16, 8 ) / 5 );
+	gSPVertex( words.w1, _SHIFTR( words.w0, 9, 7 ), _SHIFTR( words.w0, 16, 8 ) / 5 );
 }
 
-void F3DBETA_Tri1( u32 w0, u32 w1 )
+void F3DBETA_Tri1( const Gwords words )
 {
-	gSP1Triangle( _SHIFTR( w1, 16, 8 ) / 5,
-				  _SHIFTR( w1, 8, 8 ) / 5,
-				  _SHIFTR( w1, 0, 8 ) / 5);
+	gSP1Triangle( _SHIFTR( words.w1, 16, 8 ) / 5,
+				  _SHIFTR( words.w1, 8, 8 ) / 5,
+				  _SHIFTR( words.w1, 0, 8 ) / 5);
 }
 
-void F3DBETA_Tri2( u32 w0, u32 w1 )
+void F3DBETA_Tri2( const Gwords words )
 {
-	gSP2Triangles( _SHIFTR( w0, 16, 8 ) / 5, _SHIFTR( w0, 8, 8 ) / 5, _SHIFTR( w0, 0, 8 ) / 5, 0,
-				   _SHIFTR( w1, 16, 8 ) / 5, _SHIFTR( w1, 8, 8 ) / 5, _SHIFTR( w1, 0, 8 ) / 5, 0);
+	gSP2Triangles( _SHIFTR( words.w0, 16, 8 ) / 5, _SHIFTR( words.w0, 8, 8 ) / 5, _SHIFTR( words.w0, 0, 8 ) / 5, 0,
+				   _SHIFTR( words.w1, 16, 8 ) / 5, _SHIFTR( words.w1, 8, 8 ) / 5, _SHIFTR( words.w1, 0, 8 ) / 5, 0);
 }
 
-void F3DBETA_Quad( u32 w0, u32 w1 )
+void F3DBETA_Quad( const Gwords words )
 {
-	gSP1Quadrangle( _SHIFTR( w1, 24, 8 ) / 5, _SHIFTR( w1, 16, 8 ) / 5, _SHIFTR( w1, 8, 8 ) / 5, _SHIFTR( w1, 0, 8 ) / 5 );
+	gSP1Quadrangle( _SHIFTR( words.w1, 24, 8 ) / 5, _SHIFTR( words.w1, 16, 8 ) / 5, _SHIFTR( words.w1, 8, 8 ) / 5, _SHIFTR( words.w1, 0, 8 ) / 5 );
 }
 
-void F3DBETA_Perpnorm(u32 w0, u32 w1)
+void F3DBETA_Perpnorm(const Gwords words)
 {
-	gSPPerspNormalize(w1);
+	gSPPerspNormalize(words.w1);
 }
 
 void F3DBETA_Init()

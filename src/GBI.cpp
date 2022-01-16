@@ -144,9 +144,9 @@ u32 G_MWO_aLIGHT_8, G_MWO_bLIGHT_8;
 
 GBIInfo GBI;
 
-void GBI_Unknown( u32 w0, u32 w1 )
+void GBI_Unknown( const Gwords words )
 {
-	DebugMsg(DEBUG_NORMAL, "UNKNOWN GBI COMMAND 0x%02X", _SHIFTR(w0, 24, 8));
+	DebugMsg(DEBUG_NORMAL, "UNKNOWN GBI COMMAND 0x%02X", _SHIFTR(words.w0, 24, 8));
 }
 
 void GBIInfo::init()
@@ -338,7 +338,7 @@ void GBIInfo::_makeCurrent(MicrocodeInfo * _pCurrent)
 	m_pCurrent = _pCurrent;
 }
 
-bool GBIInfo::_makeExistingMicrocodeCurrent(u32 uc_start, u32 uc_dstart, u32 uc_dsize)
+bool GBIInfo::_makeExistingMicrocodeCurrent(word uc_start, word uc_dstart, u32 uc_dsize)
 {
 	auto iter = std::find_if(m_list.begin(), m_list.end(), [=](const MicrocodeInfo& info) {
 		return info.address == uc_start && info.dataAddress == uc_dstart && info.dataSize == uc_dsize;
@@ -351,7 +351,7 @@ bool GBIInfo::_makeExistingMicrocodeCurrent(u32 uc_start, u32 uc_dstart, u32 uc_
 	return true;
 }
 
-void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
+void GBIInfo::loadMicrocode(word uc_start, word uc_dstart, u16 uc_dsize)
 {
 	if (_makeExistingMicrocodeCurrent(uc_start, uc_dstart, uc_dsize))
 		return;
@@ -364,7 +364,11 @@ void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
 	current.type = NONE;
 
 	// See if we can identify it by CRC
+#ifdef NATIVE
+	const u32 uc_crc = CRC_Calculate_Strict( 0xFFFFFFFF, (void*)uc_start, 4096 );
+#else
 	const u32 uc_crc = CRC_Calculate_Strict( 0xFFFFFFFF, &RDRAM[uc_start & 0x1FFFFFFF], 4096 );
+#endif
 	SpecialMicrocodeInfo infoToSearch;
 	infoToSearch.crc = uc_crc;
 	auto it = std::lower_bound(specialMicrocodes.begin(), specialMicrocodes.end(), infoToSearch,
@@ -380,9 +384,13 @@ void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
 		return;
 	}
 
+#ifdef NATIVE
+	const char* uc_data = (const char*)uc_dstart;
+#else
 	// See if we can identify it by text
 	char uc_data[2048];
 	UnswapCopyWrap(RDRAM, uc_dstart & 0x1FFFFFFF, (u8*)uc_data, 0, 0x7FF, 2048);
+#endif
 	char uc_str[256];
 	strcpy(uc_str, "Not Found");
 
@@ -478,3 +486,20 @@ void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
 	assert(false && "unknown ucode!!!'n");
 	_makeCurrent(&current);
 }
+
+#ifdef EXTENDED_GFX
+Gwords::Gwords() : w0(0), w1(0), w2(0), w3(0) {
+}
+
+Gwords::Gwords(word _w0, word _w1) : w0(_w0), w1(_w1), w2(0), w3(0) {
+}
+
+Gwords::Gwords(word _w0, word _w1, word _w2, word _w3) : w0(_w0), w1(_w1), w2(_w2), w3(_w3) {
+}
+#else
+Gwords::Gwords() : w0(0), w1(0) {
+}
+
+Gwords::Gwords(word _w0, word _w1) : w0(_w0), w1(_w1) {
+}
+#endif

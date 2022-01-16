@@ -19,6 +19,10 @@
 #include "Log.h"
 #include "DisplayWindow.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace std;
 using namespace graphics;
 
@@ -127,7 +131,7 @@ f32 identityMatrix[4][4] =
 	{ 0.0f, 0.0f, 0.0f, 1.0f }
 };
 
-void gSPLoadUcodeEx( u32 uc_start, u32 uc_dstart, u16 uc_dsize )
+void gSPLoadUcodeEx( word uc_start, word uc_dstart, u16 uc_dsize )
 {
 	gSP.matrix.modelViewi = 0;
 	gSP.status[0] = gSP.status[1] = gSP.status[2] = gSP.status[3] = 0;
@@ -136,10 +140,12 @@ void gSPLoadUcodeEx( u32 uc_start, u32 uc_dstart, u16 uc_dsize )
 	gSP.geometryMode = 0U;
 	gSP.changed |= CHANGED_MATRIX | CHANGED_LIGHT | CHANGED_LOOKAT | CHANGED_GEOMETRYMODE;
 
+#ifndef NATIVE
 	if ((((uc_start & 0x1FFFFFFF) + 4096) > RDRAMSize) || (((uc_dstart & 0x1FFFFFFF) + uc_dsize) > RDRAMSize)) {
 		DebugMsg(DEBUG_NORMAL|DEBUG_ERROR, "gSPLoadUcodeEx out of RDRAM\n");
 		return;
 	}
+#endif
 
 	GBI.loadMicrocode(uc_start, uc_dstart, uc_dsize);
 	RSP.uc_start = uc_start;
@@ -158,7 +164,7 @@ void gSPMatrix( u32 matrix, u8 param )
 {
 
 	f32 mtx[4][4];
-	u32 address = RSP_SegmentToPhysical( matrix );
+	word address = RSP_SegmentToPhysical( matrix );
 
 	if (address + 64 > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load matrix from invalid address\n");
@@ -213,7 +219,7 @@ void gSPMatrix( u32 matrix, u8 param )
 void gSPDMAMatrix( u32 matrix, u8 index, u8 multiply )
 {
 	f32 mtx[4][4];
-	u32 address = gSP.DMAOffsets.mtx + RSP_SegmentToPhysical( matrix );
+	word address = gSP.DMAOffsets.mtx + RSP_SegmentToPhysical( matrix );
 
 	if (address + 64 > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load matrix from invalid address\n");
@@ -248,9 +254,19 @@ void gSPDMAMatrix( u32 matrix, u8 index, u8 multiply )
 		mtx[3][0], mtx[3][1], mtx[3][2], mtx[3][3] );
 }
 
+extern "C" u64 gfx_width();
+extern "C" u64 gfx_height();
+
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
+#define HALF_SCREEN_WIDTH (SCREEN_WIDTH / 2)
+#define HALF_SCREEN_HEIGHT (SCREEN_HEIGHT / 2)
+#define RATIO_X (gfx_width() / (2.0f * HALF_SCREEN_WIDTH))
+#define RATIO_Y (gfx_height() / (2.0f * HALF_SCREEN_HEIGHT))
+
 void gSPViewport( u32 v )
 {
-	u32 address = RSP_SegmentToPhysical( v );
+	word address = RSP_SegmentToPhysical( v );
 
 	if ((address + 16) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load viewport from invalid address\n");
@@ -258,14 +274,28 @@ void gSPViewport( u32 v )
 		return;
 	}
 
-	gSP.viewport.vscale[0] = _FIXED2FLOAT( *(s16*)&RDRAM[address +  2], 2 );
-	gSP.viewport.vscale[1] = _FIXED2FLOAT( *(s16*)&RDRAM[address     ], 2 );
-	gSP.viewport.vscale[2] = _FIXED2FLOAT( *(s16*)&RDRAM[address +  6], 10 );// * 0.00097847357f;
-	gSP.viewport.vscale[3] = *(s16*)&RDRAM[address +  4];
-	gSP.viewport.vtrans[0] = _FIXED2FLOAT( *(s16*)&RDRAM[address + 10], 2 );
-	gSP.viewport.vtrans[1] = _FIXED2FLOAT( *(s16*)&RDRAM[address +  8], 2 );
-	gSP.viewport.vtrans[2] = _FIXED2FLOAT( *(s16*)&RDRAM[address + 14], 10 );// * 0.00097847357f;
-	gSP.viewport.vtrans[3] = *(s16*)&RDRAM[address + 12];
+#ifdef NATIVE
+	Vp_t* vp = (Vp_t*)address;
+	gSP.viewport.vscale[0] = _FIXED2FLOAT( vp->vscale.x, 2 );
+	gSP.viewport.vscale[1] = _FIXED2FLOAT( vp->vscale.y, 2 );
+	gSP.viewport.vscale[2] = _FIXED2FLOAT( vp->vscale.z, 10 );// * 0.00097847357f;
+	gSP.viewport.vscale[3] = vp->vscale.w;
+
+	gSP.viewport.vtrans[0] = _FIXED2FLOAT( vp->vtrans.x, 2 );
+	gSP.viewport.vtrans[1] = _FIXED2FLOAT( vp->vtrans.y, 2 );
+	gSP.viewport.vtrans[2] = _FIXED2FLOAT( vp->vtrans.z, 10 );// * 0.00097847357f;
+	gSP.viewport.vtrans[3] = vp->vtrans.w;
+#else
+	gSP.viewport.vscale[0] = _FIXED2FLOAT( vp->vscale.y, 2 );
+	gSP.viewport.vscale[1] = _FIXED2FLOAT( vp->vscale.x, 2 );
+	gSP.viewport.vscale[2] = _FIXED2FLOAT( vp->vscale.w, 10 );// * 0.00097847357f;
+	gSP.viewport.vscale[3] = vp->vscale.z;
+
+	gSP.viewport.vtrans[0] = _FIXED2FLOAT( vp->vtrans.y, 2 );
+	gSP.viewport.vtrans[1] = _FIXED2FLOAT( vp->vtrans.x, 2 );
+	gSP.viewport.vtrans[2] = _FIXED2FLOAT( vp->vtrans.w, 10 );// * 0.00097847357f;
+	gSP.viewport.vtrans[3] = vp->vtrans.z;
+#endif
 
 	if (gSP.viewport.vscale[1] < 0.0f && !GBI.isNegativeY())
 		gSP.viewport.vscale[1] = -gSP.viewport.vscale[1];
@@ -277,6 +307,11 @@ void gSPViewport( u32 v )
 	gSP.viewport.nearz	= gSP.viewport.vtrans[2] - gSP.viewport.vscale[2];
 	gSP.viewport.farz	= (gSP.viewport.vtrans[2] + gSP.viewport.vscale[2]) ;
 
+	/*gSP.viewport.x *= RATIO_X;
+	gSP.viewport.y *= RATIO_Y;
+	gSP.viewport.width /= RATIO_X;
+	gSP.viewport.height /= RATIO_Y;*/
+
 	gSP.changed |= CHANGED_VIEWPORT;
 
 	DebugMsg(DEBUG_NORMAL, "gSPViewport scale(%02f, %02f, %02f), trans(%02f, %02f, %02f)\n",
@@ -286,7 +321,7 @@ void gSPViewport( u32 v )
 
 void gSPForceMatrix( u32 mptr )
 {
-	u32 address = RSP_SegmentToPhysical( mptr );
+	word address = RSP_SegmentToPhysical( mptr );
 
 	if (address + 64 > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load from invalid address");
@@ -304,7 +339,7 @@ void gSPForceMatrix( u32 mptr )
 void gSPLight( u32 l, s32 n )
 {
 	--n;
-	u32 addrByte = RSP_SegmentToPhysical( l );
+	word addrByte = RSP_SegmentToPhysical( l );
 
 	if ((addrByte + sizeof( Light )) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load light from invalid address\n");
@@ -327,7 +362,7 @@ void gSPLight( u32 l, s32 n )
 		gSP.lights.xyz[n][Z] = light->z;
 
 		Normalize( gSP.lights.xyz[n] );
-		u32 addrShort = addrByte >> 1;
+		word addrShort = addrByte >> 1;
 		gSP.lights.pos_xyzw[n][X] = (float)(((short*)RDRAM)[(addrShort+4)^1]);
 		gSP.lights.pos_xyzw[n][Y] = (float)(((short*)RDRAM)[(addrShort+5)^1]);
 		gSP.lights.pos_xyzw[n][Z] = (float)(((short*)RDRAM)[(addrShort+6)^1]);
@@ -348,7 +383,7 @@ void gSPLight( u32 l, s32 n )
 
 void gSPLightCBFD( u32 l, s32 n )
 {
-	u32 addrByte = RSP_SegmentToPhysical( l );
+	word addrByte = RSP_SegmentToPhysical( l );
 
 	if ((addrByte + sizeof( Light )) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load light from invalid address\n");
@@ -371,7 +406,7 @@ void gSPLightCBFD( u32 l, s32 n )
 		gSP.lights.xyz[n][Z] = light->z;
 
 		Normalize( gSP.lights.xyz[n] );
-		u32 addrShort = addrByte >> 1;
+		word addrShort = addrByte >> 1;
 		gSP.lights.pos_xyzw[n][X] = (float)(((short*)RDRAM)[(addrShort+16)^1]);
 		gSP.lights.pos_xyzw[n][Y] = (float)(((short*)RDRAM)[(addrShort+17)^1]);
 		gSP.lights.pos_xyzw[n][Z] = (float)(((short*)RDRAM)[(addrShort+18)^1]);
@@ -390,10 +425,10 @@ void gSPLightCBFD( u32 l, s32 n )
 
 void gSPLightAcclaim(u32 l, s32 n)
 {
-	u32 addrByte = RSP_SegmentToPhysical(l);
+	word addrByte = RSP_SegmentToPhysical(l);
 
 	if (n < 10) {
-		const u32 addrShort = addrByte >> 1;
+		const word addrShort = addrByte >> 1;
 		gSP.lights.pos_xyzw[n][X] = (f32)(((s16*)RDRAM)[(addrShort + 0) ^ 1]);
 		gSP.lights.pos_xyzw[n][Y] = (f32)(((s16*)RDRAM)[(addrShort + 1) ^ 1]);
 		gSP.lights.pos_xyzw[n][Z] = (f32)(((s16*)RDRAM)[(addrShort + 2) ^ 1]);
@@ -415,7 +450,7 @@ void gSPLightAcclaim(u32 l, s32 n)
 
 void gSPLookAt( u32 _l, u32 _n )
 {
-	u32 address = RSP_SegmentToPhysical(_l);
+	word address = RSP_SegmentToPhysical(_l);
 
 	if ((address + sizeof(Light)) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load light from invalid address\n");
@@ -932,7 +967,7 @@ void gSPVertex(u32 a, u32 n, u32 v0)
 		return;
 	}
 
-	const u32 address = RSP_SegmentToPhysical(a);
+	const word address = RSP_SegmentToPhysical(a);
 
 	if ((address + sizeof(Vertex)* n) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "gSPVertex Using Vertex outside RDRAM n = %i, v0 = %i, from %08x\n", n, v0, a);
@@ -1002,7 +1037,7 @@ void gSPCIVertex( u32 a, u32 n, u32 v0 )
 		return;
 	}
 
-	const u32 address = RSP_SegmentToPhysical( a );
+	const word address = RSP_SegmentToPhysical( a );
 
 	if ((address + sizeof( PDVertex ) * n) > RDRAMSize)
 		return;
@@ -1025,7 +1060,7 @@ void gSPCIVertex( u32 a, u32 n, u32 v0 )
 
 
 template <u32 VNUM>
-u32 gSPLoadDMAVertexData(u32 address, SPVertex * spVtx, u32 v0, u32 vi, u32 n)
+u32 gSPLoadDMAVertexData(word address, SPVertex * spVtx, u32 v0, u32 vi, u32 n)
 {
 	const u32 end = n - (n%VNUM) + v0;
 	for (; vi < end; vi += VNUM) {
@@ -1057,7 +1092,7 @@ void gSPDMAVertex( u32 a, u32 n, u32 v0 )
 		return;
 	}
 
-	const u32 address = gSP.DMAOffsets.vtx + RSP_SegmentToPhysical(a);
+	const word address = gSP.DMAOffsets.vtx + RSP_SegmentToPhysical(a);
 
 	if ((address + 10 * n) > RDRAMSize)
 		return;
@@ -1108,7 +1143,7 @@ void gSPCBFDVertex( u32 a, u32 n, u32 v0 )
 		return;
 	}
 
-	const u32 address = RSP_SegmentToPhysical(a);
+	const word address = RSP_SegmentToPhysical(a);
 
 	if ((address + sizeof( Vertex ) * n) > RDRAMSize)
 		return;
@@ -1185,7 +1220,7 @@ void gSPF3DAMVertex(u32 a, u32 n, u32 v0)
 		return;
 	}
 
-	const u32 address = RSP_SegmentToPhysical(a);
+	const word address = RSP_SegmentToPhysical(a);
 
 	if ((address + sizeof(Vertex)* n) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "gSPF3DAMVertex Using Vertex outside RDRAM n = %i, v0 = %i, from %08x\n", n, v0, a);
@@ -1259,7 +1294,7 @@ void gSPSWVertex(const SWVertex * vertex, u32 v0, u32 n)
 
 void gSPT3DUXVertex(u32 a, u32 n, u32 ci)
 {
-	const u32 address = RSP_SegmentToPhysical(a);
+	const word address = RSP_SegmentToPhysical(a);
 	const u32 colors = RSP_SegmentToPhysical(ci);
 
 	struct T3DUXVertex {
@@ -1319,11 +1354,11 @@ void gSPT3DUXVertex(u32 a, u32 n, u32 ci)
 	}
 }
 
-void gSPDisplayList( u32 dl )
+void gSPDisplayList( word dl )
 {
-	u32 address = RSP_SegmentToPhysical( dl );
+	word address = RSP_SegmentToPhysical( dl );
 
-	if ((address + 8) > RDRAMSize) {
+	if ((address + sizeof(Gwords)) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load display list from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPDisplayList( 0x%08X );\n", dl );
 		return;
@@ -1341,11 +1376,11 @@ void gSPDisplayList( u32 dl )
 	}
 }
 
-void gSPBranchList( u32 dl )
+void gSPBranchList( word dl )
 {
-	u32 address = RSP_SegmentToPhysical( dl );
+	word address = RSP_SegmentToPhysical( dl );
 
-	if ((address + 8) > RDRAMSize) {
+	if ((address + sizeof(Gwords)) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to branch to display list at invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPBranchList( 0x%08X );\n", dl );
 		return;
@@ -1353,22 +1388,22 @@ void gSPBranchList( u32 dl )
 
 	DebugMsg(DEBUG_NORMAL, "gSPBranchList( 0x%08X ) nopush\n", dl );
 
-	if (address == (RSP.PC[RSP.PCi] - 8)) {
+	if (address == (RSP.PC[RSP.PCi] - sizeof(Gwords))) {
 		RSP.infloop = true;
-		RSP.PC[RSP.PCi] -= 8;
+		RSP.PC[RSP.PCi] -= sizeof(Gwords);
 		RSP.halt = true;
 		return;
 	}
 
 	RSP.PC[RSP.PCi] = address;
-	RSP.nextCmd = _SHIFTR( *(u32*)&RDRAM[address], 24, 8 );
+	RSP.nextCmd = _SHIFTR( *(word*)&RDRAM[address], 24, 8 );
 }
 
-void gSPBranchLessZ(u32 branchdl, u32 vtx, u32 zval)
+void gSPBranchLessZ(word branchdl, u32 vtx, u32 zval)
 {
-	const u32 address = RSP_SegmentToPhysical( branchdl );
+	const word address = RSP_SegmentToPhysical( branchdl );
 
-	if ((address + 8) > RDRAMSize) {
+	if ((address + sizeof(Gwords)) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Specified display list at invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPBranchLessZ( 0x%08X, %i, %i );\n", branchdl, vtx, zval );
 		return;
@@ -1382,11 +1417,11 @@ void gSPBranchLessZ(u32 branchdl, u32 vtx, u32 zval)
 	DebugMsg(DEBUG_NORMAL, "gSPBranchLessZ( 0x%08X, %i, %i );\n", branchdl, vtx, zval );
 }
 
-void gSPBranchLessW( u32 branchdl, u32 vtx, u32 wval )
+void gSPBranchLessW( word branchdl, u32 vtx, u32 wval )
 {
-	const u32 address = RSP_SegmentToPhysical( branchdl );
+	const word address = RSP_SegmentToPhysical( branchdl );
 
-	if ((address + 8) > RDRAMSize) {
+	if ((address + sizeof(Gwords)) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Specified display list at invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPBranchLessW( 0x%08X, %i, %i );\n", branchdl, vtx, wval);
 		return;
@@ -1401,8 +1436,8 @@ void gSPBranchLessW( u32 branchdl, u32 vtx, u32 wval )
 
 void gSPDlistCount(u32 count, u32 v)
 {
-	u32 address = RSP_SegmentToPhysical( v );
-	if (address == 0 || (address + 8) > RDRAMSize) {
+	word address = RSP_SegmentToPhysical( v );
+    if (address == 0 || (address + sizeof(Gwords)) > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to branch to display list at invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPDlistCnt(%d, 0x%08X );\n", count, v);
 		return;
@@ -1418,7 +1453,7 @@ void gSPDlistCount(u32 count, u32 v)
 
 	++RSP.PCi;  // go to the next PC in the stack
 	RSP.PC[RSP.PCi] = address;  // jump to the address
-	RSP.nextCmd = _SHIFTR( *(u32*)&RDRAM[address], 24, 8 );
+	RSP.nextCmd = _SHIFTR( *(word*)&RDRAM[address], 24, 8 );
 	RSP.count = count + 1;
 }
 
@@ -1445,7 +1480,7 @@ void gSPSetVertexColorBase( u32 base )
 }
 
 void gSPDMATriangles( u32 tris, u32 n ){
-	const u32 address = RSP_SegmentToPhysical( tris );
+	const word address = RSP_SegmentToPhysical( tris );
 
 	if (address + sizeof( DKRTriangle ) * n > RDRAMSize) {
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load triangles from invalid address\n");
@@ -1574,7 +1609,7 @@ void gSPPopMatrix( u32 param )
 		(param == G_MTX_PROJECTION) ? "G_MTX_PROJECTION" : "G_MTX_INVALID");
 }
 
-void gSPSegment( s32 seg, s32 base )
+void gSPSegment( s32 seg, word base )
 {
 	gSP.segment[seg] = base;
 
@@ -1750,8 +1785,11 @@ void gSPTexture( f32 sc, f32 tc, u32 level, u32 tile, u32 on )
 	DebugMsg(DEBUG_NORMAL, "gSPTexture:  tile: %d, mipmap_lvl: %d, on: %d, s_scale: %f, t_scale: %f\n", tile, level, on, sc, tc);
 }
 
-void gSPEndDisplayList()
+void gSPEndDisplayList(const Gwords words)
 {
+    const word line = _SHIFTR(words.w0, 0, 24);
+    const char* file = (const char*)words.w1;
+
 	if (RSP.PCi > 0)
 		--RSP.PCi;
 	else {
@@ -1760,6 +1798,10 @@ void gSPEndDisplayList()
 	}
 
 	DebugMsg(DEBUG_NORMAL, "gSPEndDisplayList();\n\n");
+
+	if (line && file) {
+        DebugMsg(DEBUG_NORMAL, "\nLINE %s : %d;\n\n", file, line);
+    }
 }
 
 void gSPGeometryMode( u32 clear, u32 set )
@@ -1989,7 +2031,7 @@ void gSPSprite2DBase(u32 _base)
 {
 	DebugMsg(DEBUG_NORMAL, "gSPSprite2DBase\n");
 	assert(RSP.nextCmd == 0xBE);
-	const u32 address = RSP_SegmentToPhysical( _base );
+	const word address = RSP_SegmentToPhysical( _base );
 	uSprite *pSprite = (uSprite*)&RDRAM[address];
 
 	if (pSprite->tlutPtr != 0) {
@@ -2117,3 +2159,19 @@ void gSPSetupFunctions()
 {
 	g_ConkerUcode = GBI.getMicrocodeType() == F3DEX2CBFD;
 }
+
+#ifdef NATIVE
+word RSP_SegmentToPhysical(word segaddr) {
+    if (RSP.translateSegment) {
+        RSP.translateSegment = false;
+
+        const u32 idx = (segaddr >> 24) & 0x0F;
+        const word addr = (segaddr & 0x00FFFFFF);
+
+        DebugMsg(DEBUG_NORMAL, "Translatings segment address %x (%x) -> %x\n", segaddr, idx, gSP.segment[idx] + addr);
+        return gSP.segment[idx] + addr;
+    }
+
+    return segaddr;
+}
+#endif

@@ -18,6 +18,11 @@
 #include <Graphics/Parameters.h>
 #include "DisplayWindow.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#define DMEM ((u8*)0)
+#endif
+
 using namespace graphics;
 
 #define S2DEX_MV_MATRIX			0
@@ -64,6 +69,63 @@ using namespace graphics;
 #define G_TX_LOADTILE			0x07
 #define G_TX_RENDERTILE			0x00
 
+#ifdef NATIVE
+struct uObjBg
+{
+	u16 imageX;     /* Texture width (8-byte alignment, u10.2) */
+	u16 imageW;     /* x-coordinate of upper-left
+					position of texture (u10.5) */
+	u16 frameX;     /* Transfer destination frame width (u10.2) */
+	s16 frameW;     /* x-coordinate of upper-left
+					position of transfer destination frame (s10.2) */
+	u16 imageY;     /* Texture height (u10.2) */
+	u16 imageH;     /* y-coordinate of upper-left position of
+					texture (u10.5) */
+	u16 frameY;     /* Transfer destination frame height (u10.2) */
+	s16 frameH;     /* y-coordinate of upper-left position of transfer
+					destination  frame (s10.2) */
+	u32 imagePtr;  /* Address of texture source in DRAM*/
+	
+	u16 imageLoad;  /* Method for loading the BG image texture
+					G_BGLT_LOADBLOCK (use LoadBlock)
+					G_BGLT_LOADTILE (use LoadTile) */
+	u8  imageFmt;   /*Texel format
+					G_IM_FMT_RGBA (RGBA format)
+					G_IM_FMT_YUV (YUV format)
+					G_IM_FMT_CI (CI format)
+					G_IM_FMT_IA (IA format)
+					G_IM_FMT_I (I format)  */
+	u8  imageSiz;   /* Texel size
+					G_IM_SIZ_4b (4 bits/texel)
+					G_IM_SIZ_8b (8 bits/texel)
+					G_IM_SIZ_16b (16 bits/texel)
+					G_IM_SIZ_32b (32 bits/texel) */
+	u16 imagePal;   /* Position of palette for 4-bit color
+					index texture (4-bit precision, 0~15) */
+	u16 imageFlip;  /* Image inversion on/off (horizontal
+					direction only)
+					0 (normal display (no inversion))
+					G_BG_FLAG_FLIPS (horizontal inversion of texture image) */
+	u16 tmemW;      /* TMEM width Word size for frame 1 line
+					 When LoadBlock GS_PIX2TMEM(imageW/4,imageSiz)
+					 When LoadTile 	GS_PIX2TMEM(frameW/4,imageSiz)+1 */
+	u16 tmemH;      /* Quadruple TMEM height(s13.2) which can be loaded at once
+					 When normal texture 512/tmemW*4
+					 When CI Texture 	256/tmemW*4 */	
+	u16 tmemLoadSH; /* SH value
+					 When LoadBlock  	tmemSize/2-1
+					 When LoadTile 	tmemW*16-1 */
+	u16 tmemLoadTH; /* TH value or Stride value
+					 When LoadBlock 	GS_CALC_DXT(tmemW)
+					 When LoadTile  	tmemH-1 */	
+	u16 tmemSizeW;  /* imagePtr skip value for one line of image 1
+					 When LoadBlock 	tmemW*2
+					 When LoadTile  	GS_PIX2TMEM(imageW/4,imageSiz)*2 */
+	u16 tmemSize;   /* imagePtr skip value for one load iteration
+					 = tmemSizeW*tmemH */
+	
+};   /* 40 bytes */
+#else
 struct uObjBg {
 	u16 imageW;     /* Texture width (8-byte alignment, u10.2) */
 	u16 imageX;     /* x-coordinate of upper-left
@@ -116,6 +178,9 @@ struct uObjBg {
 					 When LoadBlock 	tmemW*2
 					 When LoadTile  	GS_PIX2TMEM(imageW/4,imageSiz)*2 */
 };   /* 40 bytes */
+#endif
+
+static_assert(sizeof(uObjBg) == 40, "incorrect uObjBg size");
 
 struct uObjScaleBg
 {
@@ -665,7 +730,7 @@ void gSPSetSpriteTile(const uObjSprite *_pObjSprite)
 static
 void gSPObjLoadTxtr(u32 tx)
 {
-	const u32 address = RSP_SegmentToPhysical(tx);
+	const word address = RSP_SegmentToPhysical(tx);
 	uObjTxtr *objTxtr = (uObjTxtr*)&RDRAM[address];
 
 	if ((gSP.status[objTxtr->block.sid >> 2] & objTxtr->block.mask) != objTxtr->block.flag) {
@@ -700,7 +765,7 @@ void gSPObjLoadTxtr(u32 tx)
 static
 void gSPObjRectangle(u32 _sp)
 {
-	const u32 address = RSP_SegmentToPhysical(_sp);
+	const word address = RSP_SegmentToPhysical(_sp);
 	uObjSprite *objSprite = (uObjSprite*)&RDRAM[address];
 	gSPSetSpriteTile(objSprite);
 
@@ -712,7 +777,7 @@ void gSPObjRectangle(u32 _sp)
 static
 void gSPObjRectangleR(u32 _sp)
 {
-	const u32 address = RSP_SegmentToPhysical(_sp);
+	const word address = RSP_SegmentToPhysical(_sp);
 	const uObjSprite *objSprite = (uObjSprite*)&RDRAM[address];
 	gSPSetSpriteTile(objSprite);
 	ObjCoordinates objCoords(objSprite, true);
@@ -727,7 +792,7 @@ void gSPObjRectangleR(u32 _sp)
 static
 void gSPObjSprite(u32 _sp)
 {
-	const u32 address = RSP_SegmentToPhysical(_sp);
+	const word address = RSP_SegmentToPhysical(_sp);
 	uObjSprite *pObjSprite = (uObjSprite*)&RDRAM[address];
 	gSPSetSpriteTile(pObjSprite);
 
@@ -926,7 +991,7 @@ void _loadBGImage(const uObjScaleBg * _pBgInfo, bool _loadScale, bool _fbImage)
 }
 
 static
-bool _useOnePieceBgCode(u32 address, bool & fbImage)
+bool _useOnePieceBgCode(word address, bool & fbImage)
 {
 	fbImage = false;
 	if (config.frameBufferEmulation.enable != 0) {
@@ -997,11 +1062,15 @@ void BgRectCopyOnePiece(u32 _bg, bool _fbImage)
 	DebugMsg(DEBUG_NORMAL, "BgRectCopyOnePiece\n");
 }
 
-//#define runCommand(w0, w1) GBI.cmd[_SHIFTR(w0, 24, 8)](w0, w1)
+//#define runCommand(words.w0, words.w1) GBI.cmd[_SHIFTR(words.w0, 24, 8)](words.w0, words.w1)
 inline
-void runCommand(u32 w0, u32 w1)
+void runCommand(const Gwords words)
 {
-	GBI.cmd[_SHIFTR(w0, 24, 8)](w0, w1);
+	GBI.cmd[_SHIFTR(words.w0, 24, 8)](words);
+};
+
+inline void runCommand(word w0, word w1) {
+    GBI.cmd[_SHIFTR(w0, 24, 8)](Gwords(w0, w1));
 };
 
 static
@@ -1157,9 +1226,9 @@ void BgRect1CycStripped(u32 _bgAddr)
 		*reinterpret_cast<u32*>(DMEM + 0x578) = G2;
 		*reinterpret_cast<u32*>(DMEM + 0x57C) = (L2 << 16) | A2_1;
 
-		runCommand(J2, 0x27000000);
-		runCommand(J2_1, K2);
-		runCommand((G_SETTILESIZE<<24), 0);
+		runCommand(Gwords(J2, 0x27000000));
+		runCommand(Gwords(J2_1, K2));
+		runCommand(Gwords((G_SETTILESIZE<<24), 0));
 	}
 
 	if (config.graphics2D.enableNativeResTexrects != 0)
@@ -1330,7 +1399,7 @@ void BgRect1CycStripped(u32 _bgAddr)
 			const u32 w1 = (JJ << 2) | HH;
 			RDP.w2 = (H2 << 16) | F1_1;
 			RDP.w3 = (objBg.scaleW << 16) | objBg.scaleH;
-			RDP_TexRect(w0, w1);
+			RDP_TexRect(Gwords(w0, w1));
 			if (FF <= 0)
 				stop = true;
 			else {
@@ -1488,7 +1557,7 @@ void BgRectCopyStripped(u32 _bgAddr)
 			w1 = T0 | T1;
 			RDP.w2 = R;
 			RDP.w3 = 0x10000400;
-			RDP_TexRect(w0, w1);
+			RDP_TexRect(Gwords(w0, w1));
 			T1 = BB + 1;
 			S += Z;
 			if (U > 0)
@@ -1512,7 +1581,7 @@ void BgRectCopyStripped(u32 _bgAddr)
 				w1 = T0 | T1;
 				RDP.w2 = R;
 				RDP.w3 = 0x10000400;
-				RDP_TexRect(w0, w1);
+				RDP_TexRect(Gwords(w0, w1));
 				T1 += 4;
 				AT -= 4;
 				if (AT <= 0)
@@ -1536,9 +1605,9 @@ void BgRectCopyStripped(u32 _bgAddr)
 	}
 }
 
-void S2DEX_BG_1Cyc(u32 w0, u32 w1)
+void S2DEX_BG_1Cyc(const Gwords words)
 {
-	const u32 bgAddr = RSP_SegmentToPhysical(w1);
+	const u32 bgAddr = RSP_SegmentToPhysical(words.w1);
 	bool fbImage = false;
 	if (_useOnePieceBgCode(bgAddr, fbImage))
 		BgRect1CycOnePiece(bgAddr, fbImage);
@@ -1546,9 +1615,9 @@ void S2DEX_BG_1Cyc(u32 w0, u32 w1)
 		BgRect1CycStripped(bgAddr);
 }
 
-void S2DEX_BG_Copy(u32 w0, u32 w1)
+void S2DEX_BG_Copy(const Gwords words)
 {
-	const u32 bgAddr = RSP_SegmentToPhysical(w1);
+	const u32 bgAddr = RSP_SegmentToPhysical(words.w1);
 	bool fbImage = false;
 	if (_useOnePieceBgCode(bgAddr, fbImage))
 		BgRectCopyOnePiece(bgAddr, fbImage);
@@ -1556,61 +1625,61 @@ void S2DEX_BG_Copy(u32 w0, u32 w1)
 		BgRectCopyStripped(bgAddr);
 }
 
-void S2DEX_Obj_MoveMem(u32 w0, u32 w1)
+void S2DEX_Obj_MoveMem(const Gwords words)
 {
-	switch (_SHIFTR(w0, 0, 16)) {
+	switch (_SHIFTR(words.w0, 0, 16)) {
 	case S2DEX_MV_MATRIX:
-		gSPObjMatrix(w1);
+		gSPObjMatrix(words.w1);
 		break;
 	case S2DEX_MV_SUBMUTRIX:
-		gSPObjSubMatrix(w1);
+		gSPObjSubMatrix(words.w1);
 		break;
 	case S2DEX_MV_VIEWPORT:
-		gSPViewport(w1);
+		gSPViewport(words.w1);
 		break;
 	}
 }
 
-void S2DEX_MoveWord(u32 w0, u32 w1)
+void S2DEX_MoveWord(const Gwords words)
 {
-	switch (_SHIFTR(w0, 0, 8))
+	switch (_SHIFTR(words.w0, 0, 8))
 	{
 	case G_MW_GENSTAT:
-		gSPSetStatus(_SHIFTR(w0, 0, 16), w1);
+		gSPSetStatus(_SHIFTR(words.w0, 0, 16), words.w1);
 		break;
 	default:
-		F3D_MoveWord(w0, w1);
+		F3D_MoveWord(words);
 		break;
 	}
 }
 
-void S2DEX_RDPHalf_0(u32 w0, u32 w1) {
+void S2DEX_RDPHalf_0(const Gwords words) {
 	if (RSP.nextCmd == G_SELECT_DL) {
-		gSP.selectDL.addr = _SHIFTR(w0, 0, 16);
-		gSP.selectDL.sid = _SHIFTR(w0, 18, 8);
-		gSP.selectDL.flag = w1;
+		gSP.selectDL.addr = _SHIFTR(words.w0, 0, 16);
+		gSP.selectDL.sid = _SHIFTR(words.w0, 18, 8);
+		gSP.selectDL.flag = words.w1;
 		return;
 	}
 	if (RSP.nextCmd == G_RDPHALF_1) {
-		RDP_TexRect(w0, w1);
+		RDP_TexRect(words);
 		return;
 	}
 	assert(false);
 }
 
-void S2DEX_Select_DL(u32 w0, u32 w1)
+void S2DEX_Select_DL(const Gwords words)
 {
-	gSP.selectDL.addr |= (_SHIFTR(w0, 0, 16)) << 16;
+	gSP.selectDL.addr |= (_SHIFTR(words.w0, 0, 16)) << 16;
 	const u8 sid = gSP.selectDL.sid;
 	const u32 flag = gSP.selectDL.flag;
-	const u32 mask = w1;
+	const u32 mask = words.w1;
 	if ((gSP.status[sid] & mask) == flag)
 		// Do nothing;
 		return;
 
 	gSP.status[sid] = (gSP.status[sid] & ~mask) | (flag & mask);
 
-	switch (_SHIFTR(w0, 16, 8))
+	switch (_SHIFTR(words.w0, 16, 8))
 	{
 	case G_DL_PUSH:
 		gSPDisplayList(gSP.selectDL.addr);
@@ -1621,48 +1690,48 @@ void S2DEX_Select_DL(u32 w0, u32 w1)
 	}
 }
 
-void S2DEX_Obj_RenderMode(u32 w0, u32 w1)
+void S2DEX_Obj_RenderMode(const Gwords words)
 {
-	gSP.objRendermode = w1;
+	gSP.objRendermode = words.w1;
 	DebugMsg(DEBUG_NORMAL, "gSPObjRendermode(0x%08x)\n", gSP.objRendermode);
 }
 
-void S2DEX_Obj_Rectangle(u32 w0, u32 w1)
+void S2DEX_Obj_Rectangle(const Gwords words)
 {
-	gSPObjRectangle(w1);
+	gSPObjRectangle(words.w1);
 }
 
-void S2DEX_Obj_Rectangle_R(u32 w0, u32 w1)
+void S2DEX_Obj_Rectangle_R(const Gwords words)
 {
-	gSPObjRectangleR(w1);
+	gSPObjRectangleR(words.w1);
 }
 
-void S2DEX_Obj_Sprite(u32 w0, u32 w1)
+void S2DEX_Obj_Sprite(const Gwords words)
 {
-	gSPObjSprite(w1);
+	gSPObjSprite(words.w1);
 }
 
-void S2DEX_Obj_LoadTxtr(u32 w0, u32 w1)
+void S2DEX_Obj_LoadTxtr(const Gwords words)
 {
-	gSPObjLoadTxtr(w1);
+	gSPObjLoadTxtr(words.w1);
 }
 
-void S2DEX_Obj_LdTx_Rect(u32 w0, u32 w1)
+void S2DEX_Obj_LdTx_Rect(const Gwords words)
 {
-	gSPObjLoadTxtr(w1);
-	gSPObjRectangle(w1 + sizeof(uObjTxtr));
+	gSPObjLoadTxtr(words.w1);
+	gSPObjRectangle(words.w1 + sizeof(uObjTxtr));
 }
 
-void S2DEX_Obj_LdTx_Rect_R(u32 w0, u32 w1)
+void S2DEX_Obj_LdTx_Rect_R(const Gwords words)
 {
-	gSPObjLoadTxtr(w1);
-	gSPObjRectangleR(w1 + sizeof(uObjTxtr));
+	gSPObjLoadTxtr(words.w1);
+	gSPObjRectangleR(words.w1 + sizeof(uObjTxtr));
 }
 
-void S2DEX_Obj_LdTx_Sprite(u32 w0, u32 w1)
+void S2DEX_Obj_LdTx_Sprite(const Gwords words)
 {
-	gSPObjLoadTxtr(w1);
-	gSPObjSprite(w1 + sizeof(uObjTxtr));
+	gSPObjLoadTxtr(words.w1);
+	gSPObjSprite(words.w1 + sizeof(uObjTxtr));
 }
 
 void S2DEX_Init()

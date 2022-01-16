@@ -21,6 +21,10 @@
 #include "FrameBuffer.h"
 #include "DisplayWindow.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 #define F3DSWRS_VTXCOLOR			0x02
 #define F3DSWRS_MOVEMEM				0x03
 #define F3DSWRS_VTX					0x04
@@ -133,22 +137,22 @@ void _updateF5DL()
 	RSP.F5DL[RSP.PCi] = _SHIFTR(*(u32*)&RDRAM[RSP.PC[RSP.PCi]], 0, 24);
 }
 
-void F3DSWRS_Mtx(u32 w0, u32 w1)
+void F3DSWRS_Mtx(const Gwords words)
 {
-	const u32 param = _SHIFTR(w0, 16, 8);
+	const u32 param = _SHIFTR(words.w0, 16, 8);
 	if ((param & G_MTX_PROJECTION) != 0)
-		F3DSWRS_PerspMatrixAddress = _SHIFTR(w1, 0, 24);
-	F3D_Mtx(w0, w1);
+		F3DSWRS_PerspMatrixAddress = _SHIFTR(words.w1, 0, 24);
+	F3D_Mtx(words);
 }
 
-void F3DSWRS_VertexColor(u32, u32 _w1)
+void F3DSWRS_VertexColor(const Gwords words)
 {
-	gSPSetVertexColorBase(_w1);
+	gSPSetVertexColorBase(words.w1);
 }
 
-void F3DSWRS_MoveMem(u32 _w0, u32)
+void F3DSWRS_MoveMem(const Gwords words)
 {
-	switch (_SHIFTR(_w0, 16, 8)) {
+	switch (_SHIFTR(words.w0, 16, 8)) {
 	case F3D_MV_VIEWPORT://G_MV_VIEWPORT:
 		F3DSWRS_ViewportAddress = _SHIFTR((RSP.PC[RSP.PCi] + 8), 0, 24);
 		gSPViewport(F3DSWRS_ViewportAddress);
@@ -163,12 +167,12 @@ void F3DSWRS_MoveMem(u32 _w0, u32)
 	RSP.PC[RSP.PCi] += 16;
 }
 
-void F3DSWRS_Vtx(u32 _w0, u32 _w1)
+void F3DSWRS_Vtx(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_Vtx (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_Vtx (0x%08x, 0x%08x)\n", words.w0, words.w1);
 
-	const u32 address = RSP_SegmentToPhysical(_w1);
-	const u32 n = _SHIFTR(_w0, 10, 6);
+	const word address = RSP_SegmentToPhysical(words.w1);
+	const u32 n = _SHIFTR(words.w0, 10, 6);
 
 	if ((address + sizeof(SWVertex)* n) > RDRAMSize)
 		return;
@@ -972,18 +976,18 @@ void TriGen02()
 	drawer.drawTriangles();
 }
 
-void F3DSWRS_TriGen(u32 _w0, u32 _w1)
+void F3DSWRS_TriGen(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_TriGen (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_TriGen (0x%08x, 0x%08x)\n", words.w0, words.w1);
 
 	const u32 nextCmd = RSP.nextCmd;
 	RSP.nextCmd = G_TRI1;
 
-	const u32 mode = _SHIFTR(_w0, 8, 8);
+	const u32 mode = _SHIFTR(words.w0, 8, 8);
 	switch (mode) {
 	case 0x00:
 	{
-		const u32 mode00 = _SHIFTR(_w0, 0, 8);
+		const u32 mode00 = _SHIFTR(words.w0, 0, 8);
 		switch (mode00) {
 		case 0x00:
 			TriGen0000();
@@ -1007,31 +1011,31 @@ void F3DSWRS_TriGen(u32 _w0, u32 _w1)
 	RSP.PC[RSP.PCi] += 32;
 }
 
-void F3DSWRS_JumpSWDL(u32, u32)
+void F3DSWRS_JumpSWDL(const Gwords words)
 {
 	DebugMsg(DEBUG_NORMAL, "F3DSWRS_JumpSWDL\n");
 	RSP.PC[RSP.PCi] = RSP.F5DL[RSP.PCi];
 	_updateF5DL();
 }
 
-void F3DSWRS_DList(u32, u32 _w1)
+void F3DSWRS_DList(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_DList (0x%08x)\n", _w1);
-	gSPDisplayList(_w1);
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_DList (0x%08x)\n", words.w1);
+    gSPDisplayList(words.w1);
 	_updateF5DL();
 }
 
-void F3DSWRS_BranchDList(u32, u32 _w1)
+void F3DSWRS_BranchDList(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_BranchDList (0x%08x)\n", _w1);
-	gSPBranchList(_w1);
+    DebugMsg(DEBUG_NORMAL, "F3DSWRS_BranchDList (0x%08x)\n", words.w1);
+    gSPBranchList(words.w1);
 	_updateF5DL();
 }
 
-void F3DSWRS_EndDisplayList(u32, u32)
+void F3DSWRS_EndDisplayList(const Gwords words)
 {
 	DebugMsg(DEBUG_NORMAL, "F3DSWRS_EndDisplayList\n");
-	gSPEndDisplayList();
+	gSPEndDisplayList(words);
 //	_updateSWDL();
 }
 
@@ -1041,7 +1045,7 @@ void _addVertices(const u32 _vert[3], GraphicsDrawer & _drawer)
 	if (_drawer.isClipped(_vert[0], _vert[1], _vert[2]))
 		return;
 
-	SPVertex & vtx0 = _drawer.getVertex(_vert[(((RSP.w1 >> 24) & 3) % 3)]);
+	SPVertex & vtx0 = _drawer.getVertex(_vert[(((RSP.words.w1 >> 24) & 3) % 3)]);
 
 	for (u32 i = 0; i < 3; ++i) {
 		SPVertex & vtx = _drawer.getVertex(_vert[i]);
@@ -1067,21 +1071,21 @@ void _addVertices(const u32 _vert[3], GraphicsDrawer & _drawer)
 	}
 }
 
-void F3DSWRS_Tri(u32 _w0, u32 _w1)
+void F3DSWRS_Tri(const Gwords words)
 {
 	const bool bTri2 = RSP.cmd == F3DSWRS_TRI2;
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_Tri%d (0x%08x, 0x%08x)\n", bTri2 ? 2 : 1, _w0, _w1);
-	const u32 v1 = (_SHIFTR(_w1, 13, 11) & 0x7F8) / 40;
-	const u32 v2 = (_SHIFTR( _w1,  5, 11 ) & 0x7F8) / 40;
-	const u32 v3 = ((_w1 <<  3) & 0x7F8) / 40;
-	const u32 v4 = (_SHIFTR( _w1,  21, 11 ) & 0x7F8) / 40;
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_Tri%d (0x%08x, 0x%08x)\n", bTri2 ? 2 : 1, words.w0, words.w1);
+	const u32 v1 = (_SHIFTR(words.w1, 13, 11) & 0x7F8) / 40;
+	const u32 v2 = (_SHIFTR( words.w1,  5, 11 ) & 0x7F8) / 40;
+	const u32 v3 = ((words.w1 <<  3) & 0x7F8) / 40;
+	const u32 v4 = (_SHIFTR( words.w1,  21, 11 ) & 0x7F8) / 40;
 	const u32 vert[4] = { v1, v2, v3, v4 };
 
 	const u32 colorParam = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 8];
 	const u32 colorIdx[4] = { _SHIFTR(colorParam, 16, 8), _SHIFTR(colorParam, 8, 8),
 							_SHIFTR(colorParam, 0, 8), _SHIFTR(colorParam, 24, 8) };
 
-	const bool useTex = (_w0 & 2) != 0;
+	const bool useTex = (words.w0 & 2) != 0;
 	const u8 * texbase = RDRAM + RSP.PC[RSP.PCi] + 16;
 	F3DSWRS_PrepareVertices(vert, RDRAM + gSP.vertexColorBase, colorIdx, texbase, useTex, gDP.otherMode.texturePersp != 0, bTri2 ? 4 : 3);
 
@@ -1106,35 +1110,35 @@ void F3DSWRS_Tri(u32 _w0, u32 _w1)
 	RSP.PC[RSP.PCi] += 8;
 }
 
-void F3DSWRS_MoveWord(u32 _w0, u32 _w1)
+void F3DSWRS_MoveWord(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_MoveWord (0x%08x, 0x%08x)\n", _w0, _w1);
-	switch (_SHIFTR(_w0, 0, 8)){
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_MoveWord (0x%08x, 0x%08x)\n", words.w0, words.w1);
+	switch (_SHIFTR(words.w0, 0, 8)){
 	case G_MW_CLIP:
-		gSPClipRatio( _w1 );
+		gSPClipRatio( words.w1 );
 		break;
 	case G_MW_SEGMENT:
-		gSPSegment( _SHIFTR( _w0, 8, 16 ) >> 2, _w1 & 0x00FFFFFF );
+		gSPSegment( _SHIFTR( words.w0, 8, 16 ) >> 2, SEGMENT_MASK(words.w1) );
 		break;
 	case F3DSWRS_MW_FOG_MULTIPLIER:
-		gSP.fog.multiplierf = _FIXED2FLOAT((s32)_w1, 16);
+		gSP.fog.multiplierf = _FIXED2FLOAT((s32)words.w1, 16);
 		gSP.changed |= CHANGED_FOGPOSITION;
 		break;
 	case F3DSWRS_MW_FOG_OFFSET:
-		gSP.fog.offsetf = _FIXED2FLOAT((s32)_w1, 16);
+		gSP.fog.offsetf = _FIXED2FLOAT((s32)words.w1, 16);
 		gSP.changed |= CHANGED_FOGPOSITION;
 		break;
 	case G_MW_PERSPNORM:
-		gSPPerspNormalize( _w1 );
+		gSPPerspNormalize( words.w1 );
 		break;
 	}
 }
 
-void F3DSWRS_TexrectGen(u32 _w0, u32 _w1)
+void F3DSWRS_TexrectGen(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_TexrectGen (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_TexrectGen (0x%08x, 0x%08x)\n", words.w0, words.w1);
 
-	const u32 vtxIdx = ((_w0 >> 5) & 0x07F8) / 40;
+	const u32 vtxIdx = ((words.w0 >> 5) & 0x07F8) / 40;
 
 	const u32* params = (const u32*)&RDRAM[RSP.PC[RSP.PCi]];
 
@@ -1147,7 +1151,7 @@ void F3DSWRS_TexrectGen(u32 _w0, u32 _w1)
 	const f32 screenX = v.x / v.w * gSP.viewport.vscale[0] + gSP.viewport.vtrans[0];
 	const f32 screenY = -v.y / v.w * gSP.viewport.vscale[1] + gSP.viewport.vtrans[1];
 
-	const bool flip = (_w0 & 1) != 0;
+	const bool flip = (words.w0 & 1) != 0;
 
 	const u32 w_i = std::max(1U, u32(v.w));
 	const u32 viewport = *(u32*)&RDRAM[F3DSWRS_ViewportAddress];
@@ -1192,12 +1196,12 @@ void F3DSWRS_TexrectGen(u32 _w0, u32 _w1)
 	u16 dtdy_i = (u16)((param4Y / offset_y_i) >> 10);
 	u16 E = 0, F = 0;
 
-	if ((_w0 & 2) != 0) {
+	if ((words.w0 & 2) != 0) {
 		dsdx_i = -dsdx_i;
 		E = _SHIFTR(params[4], 16, 16);;
 	}
 
-	if ((_w0 & 4) != 0) {
+	if ((words.w0 & 4) != 0) {
 		dtdy_i = -dtdy_i;
 		F = _SHIFTR(params[4], 0, 16);;
 	}
@@ -1244,20 +1248,20 @@ void F3DSWRS_TexrectGen(u32 _w0, u32 _w1)
 	gDPTextureRectangle(ulx, uly, lrx, lry, gSP.texture.tile, (s16)S, (s16)T, dsdx, dtdy, flip);
 }
 
-void F3DSWRS_SetOtherMode_H_EX(u32 _w0, u32 _w1)
+void F3DSWRS_SetOtherMode_H_EX(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_SetOtherMode_H_EX (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_SetOtherMode_H_EX (0x%08x, 0x%08x)\n", words.w0, words.w1);
 	RSP.PC[RSP.PCi] += 8;
 	gDP.otherMode.h &= *(u32*)&RDRAM[RSP.PC[RSP.PCi]];
-	gDP.otherMode.h |= _w1;
+	gDP.otherMode.h |= words.w1;
 }
 
-void F3DSWRS_SetOtherMode_L_EX(u32 _w0, u32 _w1)
+void F3DSWRS_SetOtherMode_L_EX(const Gwords words)
 {
-	DebugMsg(DEBUG_NORMAL, "F3DSWRS_SetOtherMode_L_EX (0x%08x, 0x%08x)\n", _w0, _w1);
+	DebugMsg(DEBUG_NORMAL, "F3DSWRS_SetOtherMode_L_EX (0x%08x, 0x%08x)\n", words.w0, words.w1);
 	RSP.PC[RSP.PCi] += 8;
 	gDP.otherMode.l &= *(u32*)&RDRAM[RSP.PC[RSP.PCi]];
-	gDP.otherMode.l |= _w1;
+	gDP.otherMode.l |= words.w1;
 }
 
 void F5Rogue_Init()

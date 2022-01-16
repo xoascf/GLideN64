@@ -21,6 +21,10 @@
 #include "Graphics/Parameters.h"
 #include "DisplayWindow.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 using namespace std;
 using namespace graphics;
 
@@ -1092,8 +1096,13 @@ void TextureCache::_getTextureDestData(CachedTexture& tmptex,
 				tx = min(x, clampSClamp) & maskSMask;
 
 				u32 taddr = ((tline + tx) ^ xorval) & 0x3ff;
+#ifdef NATIVE
+				gr = tmem16[taddr];
+				ab = tmem16[taddr | 0x400];
+#else
 				gr = swapword(tmem16[taddr]);
 				ab = swapword(tmem16[taddr | 0x400]);
+#endif
 				pDest[j++] = (ab << 16) | gr;
 			}
 		}

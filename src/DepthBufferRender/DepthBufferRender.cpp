@@ -21,6 +21,10 @@
 #include "DepthBuffer.h"
 #include "DepthBufferRender.h"
 
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
 static vertexi * max_vtx;                   // Max y vertex (ending vertex)
 static vertexi * start_vtx, *end_vtx;      // First and last vertex in array
 static vertexi * right_vtx, *left_vtx;     // Current right and left vertex

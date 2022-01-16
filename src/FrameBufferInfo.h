@@ -30,11 +30,11 @@ namespace FBInfo {
 	public:
 		FBInfo();
 
-		void Write(u32 addr, u32 size);
+		void Write(word addr, u32 size);
 
 		void WriteList(FrameBufferModifyEntry *plist, u32 size);
 
-		void Read(u32 addr);
+		void Read(word addr);
 
 		void GetInfo(void *pinfo);
 

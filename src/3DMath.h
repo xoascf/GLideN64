@@ -42,8 +42,12 @@ inline float DotProduct(const float v0[3], const float v1[3])
 
 inline float GetFloatMatrixElement(s16 _int, u16 _fract)
 {
+#ifdef NATIVE
+    return (((u16)_int << 0x10) | (u16)_fract) * (1 / 65536.0f);
+#else
 	const s32 element = static_cast<s32>((static_cast<u16>(_int) << 16) | _fract);
 	return _FIXED2FLOAT(element, 16);
+#endif
 }
 
 inline std::pair<s16, u16> GetIntMatrixElement(f32 _elem)

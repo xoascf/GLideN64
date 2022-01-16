@@ -1,12 +1,16 @@
 #include "N64.h"
 
-u8 *HEADER;
+#ifndef NATIVE
+u8* HEADER;
 u8 *DMEM;
 u8 *IMEM;
+#endif
 u64 TMEM[512];
+#ifndef NATIVE
 u8 *RDRAM;
+#endif
 
-u32 RDRAMSize = 0;
+word RDRAMSize = 0;
 
 N64Regs REG;
 

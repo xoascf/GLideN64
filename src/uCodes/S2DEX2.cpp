@@ -23,15 +23,15 @@
 #define	S2DEX2_BG_COPY			0x0A
 #define	S2DEX2_OBJ_RENDERMODE	0x0B
 
-void S2DEX2_MoveWord( u32 w0, u32 w1 )
+void S2DEX2_MoveWord( const Gwords words )
 {
-	switch (_SHIFTR( w0, 16, 8 ))
+	switch (_SHIFTR( words.w0, 16, 8 ))
 	{
 	case G_MW_GENSTAT:
-		gSPSetStatus(_SHIFTR(w0, 0, 16), w1);
+		gSPSetStatus(_SHIFTR(words.w0, 0, 16), words.w1);
 		break;
 	default:
-		F3DEX2_MoveWord(w0, w1);
+		F3DEX2_MoveWord(words);
 		break;
 	}
 }

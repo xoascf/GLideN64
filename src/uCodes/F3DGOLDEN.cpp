@@ -14,17 +14,18 @@
 
 u32 G_GOLDEN_MOVEWORD;
 
-void F3D_TriX(u32 w0, u32 w1)
+void F3D_TriX(const Gwords _words)
 {
-	while(w1 != 0) {
-		u32 v0 = w1 & 0xf;
-		w1 >>= 4;
+    Gwords words = _words;
+	while(words.w1 != 0) {
+		u32 v0 = words.w1 & 0xf;
+		words.w1 >>= 4;
 
-		u32 v1 = w1 & 0xf;
-		w1 >>= 4;
+		u32 v1 = words.w1 & 0xf;
+		words.w1 >>= 4;
 
-		u32 v2 = w0 & 0xf;
-		w0 >>= 4;
+		u32 v2 = words.w0 & 0xf;
+		words.w0 >>= 4;
 
 		gSPTriangle(v0, v1, v2);
 	}

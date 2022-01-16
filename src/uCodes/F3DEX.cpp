@@ -9,45 +9,45 @@
 #include "gDP.h"
 #include "GBI.h"
 
-void F3DEX_Vtx( u32 w0, u32 w1 )
+void F3DEX_Vtx( const Gwords words )
 {
-	gSPVertex( w1, _SHIFTR( w0, 10, 6 ), _SHIFTR( w0, 17, 7 ) );
+	gSPVertex( words.w1, _SHIFTR( words.w0, 10, 6 ), _SHIFTR( words.w0, 17, 7 ) );
 }
 
-void F3DEX_Tri1( u32 w0, u32 w1 )
+void F3DEX_Tri1( const Gwords words )
 {
-	gSP1Triangle( _SHIFTR( w1, 17, 7 ), _SHIFTR( w1, 9, 7 ), _SHIFTR( w1, 1, 7 ));
+	gSP1Triangle( _SHIFTR( words.w1, 17, 7 ), _SHIFTR( words.w1, 9, 7 ), _SHIFTR( words.w1, 1, 7 ));
 }
 
-void F3DEX_CullDL( u32 w0, u32 w1 )
+void F3DEX_CullDL( const Gwords words )
 {
-	gSPCullDisplayList( _SHIFTR( w0, 1, 15 ), _SHIFTR( w1, 1, 15 ) );
+	gSPCullDisplayList( _SHIFTR( words.w0, 1, 15 ), _SHIFTR( words.w1, 1, 15 ) );
 }
 
-void F3DEX_ModifyVtx( u32 w0, u32 w1 )
+void F3DEX_ModifyVtx( const Gwords words )
 {
-	gSPModifyVertex( _SHIFTR( w0, 1, 15 ), _SHIFTR( w0, 16, 8 ), w1 );
+	gSPModifyVertex( _SHIFTR( words.w0, 1, 15 ), _SHIFTR( words.w0, 16, 8 ), words.w1 );
 }
 
-void F3DEX_Tri2( u32 w0, u32 w1 )
+void F3DEX_Tri2( const Gwords words )
 {
-	gSP2Triangles( _SHIFTR( w0, 17, 7 ), _SHIFTR( w0, 9, 7 ), _SHIFTR( w0, 1, 7 ), 0,
-				  _SHIFTR( w1, 17, 7 ), _SHIFTR( w1, 9, 7 ), _SHIFTR( w1, 1, 7 ), 0);
+	gSP2Triangles( _SHIFTR( words.w0, 17, 7 ), _SHIFTR( words.w0, 9, 7 ), _SHIFTR( words.w0, 1, 7 ), 0,
+				  _SHIFTR( words.w1, 17, 7 ), _SHIFTR( words.w1, 9, 7 ), _SHIFTR( words.w1, 1, 7 ), 0);
 }
 
-void F3DEX_Quad( u32 w0, u32 w1 )
+void F3DEX_Quad( const Gwords words )
 {
-	gSP1Quadrangle( _SHIFTR( w1, 25, 7 ), _SHIFTR( w1, 17, 7 ), _SHIFTR( w1, 9, 7 ), _SHIFTR( w1, 1, 7 ) );
+	gSP1Quadrangle( _SHIFTR( words.w1, 25, 7 ), _SHIFTR( words.w1, 17, 7 ), _SHIFTR( words.w1, 9, 7 ), _SHIFTR( words.w1, 1, 7 ) );
 }
 
-void F3DEX_Branch_Z( u32 w0, u32 w1 )
+void F3DEX_Branch_Z( const Gwords words )
 {
-	gSPBranchLessZ(gDP.half_1, _SHIFTR(w0, 1, 11), _SHIFTR(w1, 16, 16));
+	gSPBranchLessZ(gDP.half_1, _SHIFTR(words.w0, 1, 11), _SHIFTR(words.w1, 16, 16));
 }
 
-void F3DEX_Load_uCode( u32 w0, u32 w1 )
+void F3DEX_Load_uCode( const Gwords words )
 {
-	gSPLoadUcodeEx( w1, gDP.half_1, _SHIFTR( w0, 0, 16 ) + 1 );
+	gSPLoadUcodeEx( words.w1, gDP.half_1, _SHIFTR( words.w0, 0, 16 ) + 1 );
 }
 
 void F3DEX_Init()

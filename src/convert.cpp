@@ -1,4 +1,5 @@
 #include "convert.h"
+#include <string.h>
 
 const volatile unsigned char Five2Eight[32] =
 {
@@ -99,10 +100,13 @@ const volatile unsigned char One2Eight[2] =
 	255, // 1 = 11111111
 };
 
-void UnswapCopyWrap(const u8 *src, u32 srcIdx, u8 *dest, u32 destIdx, u32 destMask, u32 numBytes)
+void UnswapCopyWrap(const u8 *src, word srcIdx, u8 *dest, word destIdx, word destMask, word numBytes)
 {
+#ifdef NATIVE
+    memcpy(dest + destIdx, src + srcIdx, numBytes);
+#else
 	// copy leading bytes
-	u32 leadingBytes = srcIdx & 3;
+	word leadingBytes = srcIdx & 3;
 	if (leadingBytes != 0) {
 		leadingBytes = 4 - leadingBytes;
 		if (leadingBytes > numBytes)
@@ -138,6 +142,7 @@ void UnswapCopyWrap(const u8 *src, u32 srcIdx, u8 *dest, u32 destIdx, u32 destMa
 			--srcIdx;
 		}
 	}
+#endif
 }
 
 void DWordInterleaveWrap(u32 *src, u32 srcIdx, u32 srcMask, u32 numQWords)

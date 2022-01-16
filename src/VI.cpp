@@ -32,6 +32,10 @@ u16 VI_GetMaxBufferHeight(u16 _width)
 
 void VI_UpdateSize()
 {
+#ifdef NATIVE2
+    VI.width = 320;
+    VI.height = 240;
+#else
 	const f32 xScale = _FIXED2FLOAT( _SHIFTR( *REG.VI_X_SCALE, 0, 12 ), 10 );
 //	f32 xOffset = _FIXED2FLOAT( _SHIFTR( *REG.VI_X_SCALE, 16, 12 ), 10 );
 
@@ -94,6 +98,7 @@ void VI_UpdateSize()
 		depthBufferList().destroy();
 		depthBufferList().init();
 	}
+#endif
 
 	VI.rwidth = VI.width != 0 ? 1.0f / VI.width : 0.0f;
 	VI.rheight = VI.height != 0 ? 1.0f / VI.height : 0.0f;

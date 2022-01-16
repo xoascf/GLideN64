@@ -195,10 +195,13 @@ void FrameBuffer::updateEndAddress()
 inline
 u32 _cutHeight(u32 _address, u32 _height, u32 _stride)
 {
+#ifndef NATIVE
 	if (_address > RDRAMSize)
 		return 0;
+
 	if (_address + _stride * _height > (RDRAMSize + 1))
 		return (RDRAMSize + 1 - _address) / _stride;
+#endif
 	return _height;
 }
 
@@ -853,7 +856,7 @@ void FrameBufferList::saveBuffer(u32 _address, u16 _format, u16 _size, u16 _widt
 		if ((m_pCurrent->m_startAddress != _address)) {
 			if (isSubBuffer(m_pCurrent)) {
 				const u32 stride = _width << _size >> 1;
-				const u32 addrOffset = _address - m_pCurrent->m_startAddress;
+				const word addrOffset = _address - m_pCurrent->m_startAddress;
 				m_pCurrent->m_originX = (addrOffset % stride) >> (_size - 1);
 				m_pCurrent->m_originY = addrOffset / stride;
 				gSP.changed |= CHANGED_VIEWPORT;
@@ -1498,7 +1501,7 @@ void FrameBufferList::renderBuffer()
 	const u32 vFullHeight = rdpRes.vi_ispal ? 288 : 240;
 	const f32 dstScaleY = m_overscan.getScaleY(vFullHeight);
 
-	const u32 addrOffset = ((rdpRes.vi_origin - pBuffer->m_startAddress) << 1 >> pBuffer->m_size);
+	const word addrOffset = ((rdpRes.vi_origin - pBuffer->m_startAddress) << 1 >> pBuffer->m_size);
 	srcY0 = static_cast<s32>(addrOffset / pBuffer->m_width);
 	if ((addrOffset != 0) && (pBuffer->m_width == addrOffset * 2))
 		srcY0 = 1;
@@ -1747,7 +1750,9 @@ void FrameBuffer_ActivateBufferTextureBG(u32 t, u32 _frameBufferAddress)
 
 void FrameBuffer_CopyToRDRAM(u32 _address, bool _sync)
 {
+#ifndef NATIVE
 	ColorBufferToRDRAM::get().copyToRDRAM(_address, _sync);
+#endif
 }
 
 void FrameBuffer_CopyChunkToRDRAM(u32 _address)
@@ -1755,7 +1760,7 @@ void FrameBuffer_CopyChunkToRDRAM(u32 _address)
 	ColorBufferToRDRAM::get().copyChunkToRDRAM(_address);
 }
 
-bool FrameBuffer_CopyDepthBuffer( u32 address )
+bool FrameBuffer_CopyDepthBuffer( word address )
 {
 	FrameBufferList & fblist = frameBufferList();
 	FrameBuffer * pCopyBuffer = fblist.getCopyBuffer();
@@ -1775,17 +1780,17 @@ bool FrameBuffer_CopyDepthBuffer( u32 address )
 	return false;
 }
 
-bool FrameBuffer_CopyDepthBufferChunk(u32 address)
+bool FrameBuffer_CopyDepthBufferChunk(word address)
 {
 	return DepthBufferToRDRAM::get().copyChunkToRDRAM(address);
 }
 
-void FrameBuffer_CopyFromRDRAM(u32 _address, bool _bCFB)
+void FrameBuffer_CopyFromRDRAM(word _address, bool _bCFB)
 {
 	RDRAMtoColorBuffer::get().copyFromRDRAM(_address, _bCFB);
 }
 
-void FrameBuffer_AddAddress(u32 address, u32 _size)
+void FrameBuffer_AddAddress(word address, u32 _size)
 {
 	RDRAMtoColorBuffer::get().addAddress(address, _size);
 }

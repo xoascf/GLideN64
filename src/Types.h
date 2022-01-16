@@ -61,4 +61,43 @@ private:
 	T m_val;
 };
 
+#include "porting.h"
+
+struct Gwords {
+    Gwords();
+    Gwords(word _w0, word _w1);
+
+    word w0;
+    word w1;
+#ifdef EXTENDED_GFX
+    word w2;
+    word w3;
+
+	Gwords(word _w0, word _w1, word _w2, word _w3);
+#endif
+};
+
+#ifdef EXTENDED_GFX
+static_assert(sizeof(Gwords) == sizeof(word) * 4, "Gwords is incorrect size");
+#else
+static_assert(sizeof(Gwords) == sizeof(word) * 2, "Gwords is incorrect size");
+#endif
+
+struct RGBA8
+{
+#ifdef NATIVE
+    u8 a;
+    u8 b;
+    u8 g;
+    u8 r;
+#else
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+#endif
+};
+
+static_assert(sizeof(RGBA8) == 4);
+
 #endif // TYPES_H

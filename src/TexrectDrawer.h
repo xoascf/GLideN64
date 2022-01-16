@@ -49,7 +49,7 @@ private:
 	struct iRect {
 		s32 ulx = 0, uly = 0, lrx = 0, lry = 0;
 	};
-	iRect _getiRect(u32 w0, u32 w1) const;
+	iRect _getiRect(word w0, word w1) const;
 	iRect m_curRect;
 };
 

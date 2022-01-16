@@ -11,225 +11,240 @@
 #include "DebugDump.h"
 #include "DisplayWindow.h"
 
-void RDP_Unknown( u32 w0, u32 w1 )
+#ifdef NATIVE
+#define RDRAM ((u8*)0)
+#endif
+
+#define SIGN_MASK(n) (1 << (12 - 1))
+
+#define SIGN12(a) \
+(a & SIGN_MASK(12) ? \
+(((1 << 12) / 2 - (a & (SIGN_MASK(12) - 1))) * -1) \
+: (a)) 
+
+void RDP_Unknown( const Gwords words )
 {
 	DebugMsg(DEBUG_NORMAL, "RDP_Unknown\r\n");
-	DebugMsg(DEBUG_NORMAL, "\tUnknown RDP opcode %02X\r\n", _SHIFTR(w0, 24, 8));
+	DebugMsg(DEBUG_NORMAL, "\tUnknown RDP opcode %02X\r\n", _SHIFTR(words.w0, 24, 8));
 }
 
-void RDP_NoOp( u32 w0, u32 w1 )
+void RDP_NoOp( const Gwords words )
 {
-	gDPNoOp();
+	gDPNoOp(words);
 }
 
-void RDP_SetCImg( u32 w0, u32 w1 )
-{
-	gDPSetColorImage( _SHIFTR( w0, 21,  3 ),		// fmt
-					  _SHIFTR( w0, 19,  2 ),		// siz
-					  _SHIFTR( w0,  0, 12 ) + 1,	// width
-					  w1 );							// img
+void RDP_MarkSegment(const Gwords words) {
+    RSP.translateSegment = true;
 }
 
-void RDP_SetZImg( u32 w0, u32 w1 )
+void RDP_SetCImg( const Gwords words )
 {
-	gDPSetDepthImage( w1 );	// img
+	gDPSetColorImage( _SHIFTR( words.w0, 21,  3 ),		// fmt
+					  _SHIFTR( words.w0, 19,  2 ),		// siz
+					  _SHIFTR( words.w0,  0, 12 ) + 1,	// width
+					  words.w1 );							// img
 }
 
-void RDP_SetTImg( u32 w0, u32 w1 )
+void RDP_SetZImg( const Gwords words )
 {
-	gDPSetTextureImage( _SHIFTR( w0, 21,  3),		// fmt
-						_SHIFTR( w0, 19,  2 ),		// siz
-						_SHIFTR( w0,  0, 12 ) + 1,	// width
-						w1 );						// img
+	gDPSetDepthImage( words.w1 );	// img
 }
 
-void RDP_SetCombine( u32 w0, u32 w1 )
+void RDP_SetTImg( const Gwords words )
 {
-	gDPSetCombine( _SHIFTR( w0, 0, 24 ),	// muxs0
-				   w1 );					// muxs1
+	gDPSetTextureImage( _SHIFTR( words.w0, 21,  3),		// fmt
+						_SHIFTR( words.w0, 19,  2 ),		// siz
+						_SHIFTR( words.w0,  0, 12 ) + 1,	// width
+						words.w1 );						// img
 }
 
-void RDP_SetEnvColor( u32 w0, u32 w1 )
+void RDP_SetCombine( const Gwords words )
 {
-	gDPSetEnvColor( _SHIFTR( w1, 24, 8 ),		// r
-					_SHIFTR( w1, 16, 8 ),		// g
-					_SHIFTR( w1,  8, 8 ),		// b
-					_SHIFTR( w1,  0, 8 ) );		// a
+	gDPSetCombine( _SHIFTR( words.w0, 0, 24 ),	// muxs0
+				   words.w1 );					// muxs1
 }
 
-void RDP_SetPrimColor( u32 w0, u32 w1 )
+void RDP_SetEnvColor( const Gwords words )
 {
-	gDPSetPrimColor( _SHIFTR( w0,  8, 5 ),		// m
-					 _SHIFTR( w0,  0, 8 ),		// l
-					 _SHIFTR( w1, 24, 8 ),		// r
-					 _SHIFTR( w1, 16, 8 ),		// g
-					 _SHIFTR( w1,  8, 8 ),		// b
-					 _SHIFTR( w1,  0, 8 ) );	// a
+	gDPSetEnvColor( _SHIFTR( words.w1, 24, 8 ),		// r
+					_SHIFTR( words.w1, 16, 8 ),		// g
+					_SHIFTR( words.w1,  8, 8 ),		// b
+					_SHIFTR( words.w1,  0, 8 ) );		// a
+}
+
+void RDP_SetPrimColor( const Gwords words )
+{
+	gDPSetPrimColor( _SHIFTR( words.w0,  8, 5 ),		// m
+					 _SHIFTR( words.w0,  0, 8 ),		// l
+					 _SHIFTR( words.w1, 24, 8 ),		// r
+					 _SHIFTR( words.w1, 16, 8 ),		// g
+					 _SHIFTR( words.w1,  8, 8 ),		// b
+					 _SHIFTR( words.w1,  0, 8 ) );	// a
 
 }
 
-void RDP_SetBlendColor( u32 w0, u32 w1 )
+void RDP_SetBlendColor( const Gwords words )
 {
-	gDPSetBlendColor( _SHIFTR( w1, 24, 8 ),		// r
-					  _SHIFTR( w1, 16, 8 ),		// g
-					  _SHIFTR( w1,  8, 8 ),		// b
-					  _SHIFTR( w1,  0, 8 ) );	// a
+	gDPSetBlendColor( _SHIFTR( words.w1, 24, 8 ),		// r
+					  _SHIFTR( words.w1, 16, 8 ),		// g
+					  _SHIFTR( words.w1,  8, 8 ),		// b
+					  _SHIFTR( words.w1,  0, 8 ) );	// a
 }
 
-void RDP_SetFogColor( u32 w0, u32 w1 )
+void RDP_SetFogColor( const Gwords words )
 {
-	gDPSetFogColor( _SHIFTR( w1, 24, 8 ),		// r
-					_SHIFTR( w1, 16, 8 ),		// g
-					_SHIFTR( w1,  8, 8 ),		// b
-					_SHIFTR( w1,  0, 8 ) );		// a
+	gDPSetFogColor( _SHIFTR( words.w1, 24, 8 ),		// r
+					_SHIFTR( words.w1, 16, 8 ),		// g
+					_SHIFTR( words.w1,  8, 8 ),		// b
+					_SHIFTR( words.w1,  0, 8 ) );		// a
 }
 
-void RDP_SetFillColor( u32 w0, u32 w1 )
+void RDP_SetFillColor( const Gwords words )
 {
-	gDPSetFillColor( w1 );
+	gDPSetFillColor( words.w1 );
 }
 
-void RDP_FillRect( u32 w0, u32 w1 )
+void RDP_FillRect( const Gwords words )
 {
-	const u32 ulx = _SHIFTR(w1, 14, 10);
-	const u32 uly = _SHIFTR(w1, 2, 10);
-	const u32 lrx = _SHIFTR(w0, 14, 10);
-	const u32 lry = _SHIFTR(w0, 2, 10);
+	const u32 ulx = _SHIFTR(words.w1, 14, 10);
+	const u32 uly = _SHIFTR(words.w1, 2, 10);
+	const u32 lrx = _SHIFTR(words.w0, 14, 10);
+	const u32 lry = _SHIFTR(words.w0, 2, 10);
 	if (lrx < ulx || lry < uly)
 		return;
 	gDPFillRectangle(ulx, uly, lrx, lry);
 }
 
-void RDP_SetTile( u32 w0, u32 w1 )
+void RDP_SetTile( const Gwords words )
 {
-	gDPSetTile( _SHIFTR( w0, 21, 3 ),	// fmt
-				_SHIFTR( w0, 19, 2 ),	// siz
-				_SHIFTR( w0,  9, 9 ),	// line
-				_SHIFTR( w0,  0, 9 ),	// tmem
-				_SHIFTR( w1, 24, 3 ),	// tile
-				_SHIFTR( w1, 20, 4 ),	// palette
-				_SHIFTR( w1, 18, 2 ),	// cmt
-				_SHIFTR( w1,  8, 2 ),	// cms
-				_SHIFTR( w1, 14, 4 ),	// maskt
-				_SHIFTR( w1,  4, 4 ),	// masks
-				_SHIFTR( w1, 10, 4 ),	// shiftt
-				_SHIFTR( w1,  0, 4 ) );	// shifts
+	gDPSetTile( _SHIFTR( words.w0, 21, 3 ),	// fmt
+				_SHIFTR( words.w0, 19, 2 ),	// siz
+				_SHIFTR( words.w0,  9, 9 ),	// line
+				_SHIFTR( words.w0,  0, 9 ),	// tmem
+				_SHIFTR( words.w1, 24, 3 ),	// tile
+				_SHIFTR( words.w1, 20, 4 ),	// palette
+				_SHIFTR( words.w1, 18, 2 ),	// cmt
+				_SHIFTR( words.w1,  8, 2 ),	// cms
+				_SHIFTR( words.w1, 14, 4 ),	// maskt
+				_SHIFTR( words.w1,  4, 4 ),	// masks
+				_SHIFTR( words.w1, 10, 4 ),	// shiftt
+				_SHIFTR( words.w1,  0, 4 ) );	// shifts
 }
 
-void RDP_LoadTile( u32 w0, u32 w1 )
+void RDP_LoadTile( const Gwords words )
 {
-	gDPLoadTile( _SHIFTR( w1, 24,  3 ),		// tile
-				 _SHIFTR( w0, 12, 12 ),		// uls
-				 _SHIFTR( w0,  0, 12 ),		// ult
-				 _SHIFTR( w1, 12, 12 ),		// lrs
-				 _SHIFTR( w1,  0, 12 ) );	// lrt
+	gDPLoadTile( _SHIFTR( words.w1, 24,  3 ),		// tile
+				 _SHIFTR( words.w0, 12, 12 ),		// uls
+				 _SHIFTR( words.w0,  0, 12 ),		// ult
+				 _SHIFTR( words.w1, 12, 12 ),		// lrs
+				 _SHIFTR( words.w1,  0, 12 ) );	// lrt
 }
 
 static u32 lbw0, lbw1;
-void RDP_LoadBlock( u32 w0, u32 w1 )
+void RDP_LoadBlock( const Gwords words )
 {
-	lbw0 = w0;
-	lbw1 = w1;
-	gDPLoadBlock( _SHIFTR( w1, 24,  3 ),	// tile
-				  _SHIFTR( w0, 12, 12 ),	// uls
-				  _SHIFTR( w0,  0, 12 ),	// ult
-				  _SHIFTR( w1, 12, 12 ),	// lrs
-				  _SHIFTR( w1,  0, 12 ) );	// dxt
+	lbw0 = words.w0;
+	lbw1 = words.w1;
+	gDPLoadBlock( _SHIFTR( words.w1, 24,  3 ),	// tile
+				  _SHIFTR( words.w0, 12, 12 ),	// uls
+				  _SHIFTR( words.w0,  0, 12 ),	// ult
+				  _SHIFTR( words.w1, 12, 12 ),	// lrs
+				  _SHIFTR( words.w1,  0, 12 ) );	// dxt
 }
 
 void RDP_RepeatLastLoadBlock()
 {
-	RDP_LoadBlock(lbw0, lbw1);
+	RDP_LoadBlock(Gwords(lbw0, lbw1));
 }
 
-void RDP_SetTileSize( u32 w0, u32 w1 )
+void RDP_SetTileSize( const Gwords words )
 {
-	gDPSetTileSize( _SHIFTR( w1, 24,  3 ),		// tile
-					_SHIFTR( w0, 12, 12 ),		// uls
-					_SHIFTR( w0,  0, 12 ),		// ult
-					_SHIFTR( w1, 12, 12 ),		// lrs
-					_SHIFTR( w1,  0, 12 ) );	// lrt
+	gDPSetTileSize( _SHIFTR( words.w1, 24,  3 ),		// tile
+					_SHIFTR( words.w0, 12, 12 ),		// uls
+					_SHIFTR( words.w0,  0, 12 ),		// ult
+					_SHIFTR( words.w1, 12, 12 ),		// lrs
+					_SHIFTR( words.w1,  0, 12 ) );	// lrt
 }
 
-void RDP_LoadTLUT( u32 w0, u32 w1 )
+void RDP_LoadTLUT( const Gwords words )
 {
-	gDPLoadTLUT( _SHIFTR( w1, 24,  3 ),	// tile
-				  _SHIFTR( w0, 12, 12 ),	// uls
-				  _SHIFTR( w0,  0, 12 ),	// ult
-				  _SHIFTR( w1, 12, 12 ),	// lrs
-				  _SHIFTR( w1,  0, 12 ) );	// lrt
+	gDPLoadTLUT( _SHIFTR( words.w1, 24,  3 ),	// tile
+				  _SHIFTR( words.w0, 12, 12 ),	// uls
+				  _SHIFTR( words.w0,  0, 12 ),	// ult
+				  _SHIFTR( words.w1, 12, 12 ),	// lrs
+				  _SHIFTR( words.w1,  0, 12 ) );	// lrt
 }
 
-void RDP_SetOtherMode( u32 w0, u32 w1 )
+void RDP_SetOtherMode( const Gwords words )
 {
-	gDPSetOtherMode( _SHIFTR( w0, 0, 24 ),	// mode0
-					 w1 );					// mode1
+	gDPSetOtherMode( _SHIFTR( words.w0, 0, 24 ),	// mode0
+					 words.w1 );					// mode1
 }
 
-void RDP_SetPrimDepth( u32 w0, u32 w1 )
+void RDP_SetPrimDepth( const Gwords words )
 {
-	gDPSetPrimDepth( _SHIFTR( w1, 16, 16 ),		// z
-					 _SHIFTR( w1,  0, 16 ) );	// dz
+	gDPSetPrimDepth( _SHIFTR( words.w1, 16, 16 ),		// z
+					 _SHIFTR( words.w1,  0, 16 ) );	// dz
 }
 
-void RDP_SetScissor( u32 w0, u32 w1 )
+void RDP_SetScissor( const Gwords words )
 {
-	gDPSetScissor( _SHIFTR( w1, 24,  2 ),	// mode
-				   _SHIFTR( w0, 12, 12 ),	// ulx
-				   _SHIFTR( w0,  0, 12 ),	// uly
-				   _SHIFTR( w1, 12, 12 ),	// lrx
-				   _SHIFTR( w1,  0, 12 ) );	// lry
+	gDPSetScissor( _SHIFTR( words.w1, 24,  2 ),	// mode
+				   _SHIFTR( words.w0, 12, 12 ),	// ulx
+				   _SHIFTR( words.w0,  0, 12 ),	// uly
+				   _SHIFTR( words.w1, 12, 12 ),	// lrx
+				   _SHIFTR( words.w1,  0, 12 ) );	// lry
 }
 
-void RDP_SetConvert( u32 w0, u32 w1 )
+void RDP_SetConvert( const Gwords words )
 {
-	gDPSetConvert( _SHIFTR( w0, 13, 9 ),	// k0
-				   _SHIFTR( w0,  4, 9 ),	// k1
-				   _SHIFTL( w0,  5, 4 ) | _SHIFTR( w1, 27, 5 ),	// k2
-				   _SHIFTR( w1, 18, 9 ),	// k3
-				   _SHIFTR( w1,  9, 9 ),	// k4
-				   _SHIFTR( w1,  0, 9 ) );	// k5
+	gDPSetConvert( _SHIFTR( words.w0, 13, 9 ),	// k0
+				   _SHIFTR( words.w0,  4, 9 ),	// k1
+				   _SHIFTL( words.w0,  5, 4 ) | _SHIFTR( words.w1, 27, 5 ),	// k2
+				   _SHIFTR( words.w1, 18, 9 ),	// k3
+				   _SHIFTR( words.w1,  9, 9 ),	// k4
+				   _SHIFTR( words.w1,  0, 9 ) );	// k5
 }
 
-void RDP_SetKeyR( u32 w0, u32 w1 )
+void RDP_SetKeyR( const Gwords words )
 {
-	gDPSetKeyR( _SHIFTR( w1,  8,  8 ),		// cR
-				_SHIFTR( w1,  0,  8 ),		// sR
-				_SHIFTR( w1, 16, 12 ) );	// wR
+	gDPSetKeyR( _SHIFTR( words.w1,  8,  8 ),		// cR
+				_SHIFTR( words.w1,  0,  8 ),		// sR
+				_SHIFTR( words.w1, 16, 12 ) );	// wR
 }
 
-void RDP_SetKeyGB( u32 w0, u32 w1 )
+void RDP_SetKeyGB( const Gwords words )
 {
-	gDPSetKeyGB( _SHIFTR( w1, 24,  8 ),		// cG
-				 _SHIFTR( w1, 16,  8 ),		// sG
-				 _SHIFTR( w0, 12, 12 ),		// wG
-				 _SHIFTR( w1,  8,  8 ),		// cB
-				 _SHIFTR( w1,  0,  8 ),		// SB
-				 _SHIFTR( w0,  0, 12 ) );	// wB
+	gDPSetKeyGB( _SHIFTR( words.w1, 24,  8 ),		// cG
+				 _SHIFTR( words.w1, 16,  8 ),		// sG
+				 _SHIFTR( words.w0, 12, 12 ),		// wG
+				 _SHIFTR( words.w1,  8,  8 ),		// cB
+				 _SHIFTR( words.w1,  0,  8 ),		// SB
+				 _SHIFTR( words.w0,  0, 12 ) );	// wB
 }
 
-void RDP_FullSync( u32 w0, u32 w1 )
+void RDP_FullSync( const Gwords words )
 {
 	gDPFullSync();
 }
 
-void RDP_TileSync( u32 w0, u32 w1 )
+void RDP_TileSync( const Gwords words )
 {
 	gDPTileSync();
 }
 
-void RDP_PipeSync( u32 w0, u32 w1 )
+void RDP_PipeSync( const Gwords words )
 {
-	gDPPipeSync();
+	gDPPipeSync(words);
 }
 
-void RDP_LoadSync( u32 w0, u32 w1 )
+void RDP_LoadSync( const Gwords words )
 {
 	gDPLoadSync();
 }
 
 static
-bool _getTexRectParams(u32 & w2, u32 & w3)
+bool _getTexRectParams(word & w2, word & w3)
 {
 	if (RSP.LLE) {
 		w2 = RDP.w2;
@@ -243,8 +258,8 @@ bool _getTexRectParams(u32 & w2, u32 & w3)
 		halfTexRect
 	} texRectMode = gdpTexRect;
 
-	const u32 cmd1 = (*(u32*)&RDRAM[RSP.PC[RSP.PCi] + 0]) >> 24;
-	const u32 cmd2 = (*(u32*)&RDRAM[RSP.PC[RSP.PCi] + 8]) >> 24;
+	const word cmd1 = (*(word*)&RDRAM[RSP.PC[RSP.PCi] + 0]) >> 24;
+	const word cmd2 = (*(word*)&RDRAM[RSP.PC[RSP.PCi] + sizeof(Gwords)]) >> 24;
 	if (cmd1 == G_RDPHALF_1) {
 		if (cmd2 == G_RDPHALF_2)
 			texRectMode = gspTexRect;
@@ -255,34 +270,34 @@ bool _getTexRectParams(u32 & w2, u32 & w3)
 
 	switch (texRectMode) {
 	case gspTexRect:
-		w2 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
-		RSP.PC[RSP.PCi] += 8;
+		w2 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 4];
+		RSP.PC[RSP.PCi] += sizeof(Gwords);
 
-		w3 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
-		RSP.PC[RSP.PCi] += 8;
+		w3 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 4];
+		RSP.PC[RSP.PCi] += sizeof(Gwords);
 		break;
 	case gdpTexRect:
 		if ((config.generalEmulation.hacks & hack_WinBack) != 0) {
-			RSP.PC[RSP.PCi] += 8;
+			RSP.PC[RSP.PCi] += sizeof(Gwords);
 			return false;
 		}
 		{
-			const u32 ucode = GBI.getMicrocodeType();
+			const word ucode = GBI.getMicrocodeType();
 			if (ucode == F5Rogue || ucode == F5Indi_Naboo) {
-				w2 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 8];
-				w3 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 12];
-				RSP.PC[RSP.PCi] += 8;
+				w2 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 8];
+				w3 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 12];
+				RSP.PC[RSP.PCi] += sizeof(Gwords);
 				return true;
 			}
 		}
-		w2 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 0];
-		w3 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
-		RSP.PC[RSP.PCi] += 8;
+		w2 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 0];
+		w3 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 4];
+		RSP.PC[RSP.PCi] += sizeof(Gwords);
 		break;
 	case halfTexRect:
 		w2 = 0;
-		w3 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
-		RSP.PC[RSP.PCi] += 8;
+		w3 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 4];
+		RSP.PC[RSP.PCi] += sizeof(Gwords);
 		break;
 	default:
 		assert(false && "Unknown texrect mode");
@@ -291,17 +306,17 @@ bool _getTexRectParams(u32 & w2, u32 & w3)
 }
 
 static
-void _TexRect( u32 w0, u32 w1, bool flip )
+void _TexRect( const Gwords words, bool flip )
 {
-	u32 w2, w3;
+	word w2, w3;
 	if (!_getTexRectParams(w2, w3))
 		return;
-	RDP.w0 = w0;
-	RDP.w1 = w1;
-	const s32 ulx = _SHIFTR(w1, 12, 12);
-	const s32 uly = _SHIFTR(w1, 0, 12);
-	const s32 lrx = _SHIFTR(w0, 12, 12);
-	const s32 lry = _SHIFTR(w0, 0, 12);
+	RDP.w0 = words.w0;
+	RDP.w1 = words.w1;
+	const s32 ulx = SIGN12(_SHIFTR(words.w1, 12, 12));
+	const s32 uly = _SHIFTR(words.w1, 0, 12);
+	const s32 lrx = SIGN12(_SHIFTR(words.w0, 12, 12));
+	const s32 lry = _SHIFTR(words.w0, 0, 12);
 	if (lrx < ulx || lry < uly)
 		return;
 	if (gDP.otherMode.cycleType == G_CYC_COPY)
@@ -310,7 +325,7 @@ void _TexRect( u32 w0, u32 w1, bool flip )
 			f32(uly >> 2),
 			f32(lrx >> 2),
 			f32(lry >> 2),
-			_SHIFTR(w1, 24, 3),							// tile
+			_SHIFTR(words.w1, 24, 3),							// tile
 			(s16)_SHIFTR(w2, 16, 16),					// s
 			(s16)_SHIFTR(w2, 0, 16),					// t
 			_FIXED2FLOAT((s16)_SHIFTR(w3, 16, 16), 10),	// dsdx
@@ -322,7 +337,7 @@ void _TexRect( u32 w0, u32 w1, bool flip )
 			_FIXED2FLOAT(uly, 2),
 			_FIXED2FLOAT(lrx, 2),
 			_FIXED2FLOAT(lry, 2),
-			_SHIFTR(w1, 24, 3),							// tile
+			_SHIFTR(words.w1, 24, 3),							// tile
 			(s16)_SHIFTR(w2, 16, 16),					// s
 			(s16)_SHIFTR(w2, 0, 16),					// t
 			_FIXED2FLOAT((s16)_SHIFTR(w3, 16, 16), 10),	// dsdx
@@ -330,54 +345,54 @@ void _TexRect( u32 w0, u32 w1, bool flip )
 			flip);
 }
 
-void RDP_TexRectFlip( u32 w0, u32 w1 )
+void RDP_TexRectFlip( const Gwords words )
 {
-	_TexRect(w0, w1, true);
+	_TexRect(words, true);
 }
 
-void RDP_TexRect( u32 w0, u32 w1 )
+void RDP_TexRect( const Gwords words )
 {
-	_TexRect(w0, w1, false);
+	_TexRect(words, false);
 }
 
-void RDP_TriFill( u32 _w0, u32 _w1 )
+void RDP_TriFill(const Gwords words)
 {
-	gDPTriFill(_w0, _w1);
+	gDPTriFill(words.w0, words.w1);
 }
 
-void RDP_TriShade( u32 _w0, u32 _w1 )
+void RDP_TriShade(const Gwords words)
 {
-	gDPTriShade(_w0, _w1);
+	gDPTriShade(words.w0, words.w1);
 }
 
-void RDP_TriTxtr( u32 _w0, u32 _w1 )
+void RDP_TriTxtr(const Gwords words)
 {
-	gDPTriTxtr(_w0, _w1);
+	gDPTriTxtr(words.w0, words.w1);
 }
 
-void RDP_TriShadeTxtr( u32 _w0, u32 _w1 )
+void RDP_TriShadeTxtr(const Gwords words)
 {
-	gDPTriShadeTxtr(_w0, _w1);
+	gDPTriShadeTxtr(words.w0, words.w1);
 }
 
-void RDP_TriFillZ( u32 _w0, u32 _w1 )
+void RDP_TriFillZ(const Gwords words)
 {
-	gDPTriFillZ(_w0, _w1);
+	gDPTriFillZ(words.w0, words.w1);
 }
 
-void RDP_TriShadeZ( u32 _w0, u32 _w1 )
+void RDP_TriShadeZ(const Gwords words)
 {
-	gDPTriShadeZ(_w0, _w1);
+	gDPTriShadeZ(words.w0, words.w1);
 }
 
-void RDP_TriTxtrZ( u32 _w0, u32 _w1 )
+void RDP_TriTxtrZ(const Gwords words)
 {
-	gDPTriTxtrZ(_w0, _w1);
+	gDPTriTxtrZ(words.w0, words.w1);
 }
 
-void RDP_TriShadeTxtrZ( u32 _w0, u32 _w1 )
+void RDP_TriShadeTxtrZ(const Gwords words)
 {
-	gDPTriShadeTxtrZ(_w0, _w1);
+	gDPTriShadeTxtrZ(words.w0, words.w1);
 }
 
 RDPInfo RDP;
@@ -422,6 +437,9 @@ void RDP_Init()
 	GBI.cmd[G_TEXRECTFLIP]		= RDP_TexRectFlip;
 	GBI.cmd[G_TEXRECT]			= RDP_TexRect;
 	GBI.cmd[G_RDPNOOP]			= RDP_NoOp;
+#ifdef NATIVE
+	GBI.cmd[G_MARK_SEGMENT]		= RDP_MarkSegment;
+#endif
 
 	RDP.w0 = RDP.w1 = RDP.w2 = RDP.w3 = 0;
 	RDP.cmd_ptr = RDP.cmd_cur = 0;
@@ -522,8 +540,8 @@ const u32 CmdLength[64] =
 
 void RDP_Half_1( u32 _c )
 {
-	u32 w0 = 0, w1 = _c;
-	u32 cmd = _SHIFTR( _c, 24, 8 );
+	word w0 = 0, w1 = _c;
+	word cmd = _SHIFTR( _c, 24, 8 );
 	if (cmd >= 0xc8 && cmd <=0xcf) {//triangle command
 		DebugMsg(DEBUG_NORMAL, "gDPHalf_1 LLE Triangle\n");
 		RDP.cmd_ptr = 0;
@@ -532,41 +550,52 @@ void RDP_Half_1( u32 _c )
 			RDP.cmd_data[RDP.cmd_ptr++] = w1;
 			RSP_CheckDLCounter();
 
-			w0 = *(u32*)&RDRAM[RSP.PC[RSP.PCi]];
-			w1 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
+			w0 = *(word*)&RDRAM[RSP.PC[RSP.PCi]];
+			w1 = *(word*)&RDRAM[RSP.PC[RSP.PCi] + 4];
 			RSP.cmd = _SHIFTR( w0, 24, 8 );
 
-			DebugMsg(DEBUG_NORMAL, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(w0, 24, 8), w0, w1);
+			DebugMsg(DEBUG_NORMAL, "0x%08lX: CMD=0x%02lX w0=0x%08lX w1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(w0, 24, 8), w0, w1);
 
-			RSP.PC[RSP.PCi] += 8;
+			RSP.PC[RSP.PCi] += sizeof(Gwords);
 			// RSP.nextCmd = _SHIFTR( *(u32*)&RDRAM[RSP.PC[RSP.PCi]], 24, 8 );
 		} while (RSP.cmd != 0xb3);
 		RDP.cmd_data[RDP.cmd_ptr++] = w1;
 		RSP.cmd = (RDP.cmd_data[RDP.cmd_cur] >> 24) & 0x3f;
 		w0 = RDP.cmd_data[RDP.cmd_cur+0];
 		w1 = RDP.cmd_data[RDP.cmd_cur+1];
-		LLEcmd[RSP.cmd](w0, w1);
+		LLEcmd[RSP.cmd](Gwords(w0, w1));
 		LLETriangle::get().flush(cmd);
 	} else {
 		DebugMsg(DEBUG_NORMAL | DEBUG_IGNORED, "gDPHalf_1()\n");
 	}
 }
 
+#ifdef NATIVE
+#define rdram ((u32*)0)
+#define rsp_dmem ((u32*)0)
+#else
 #define rdram ((u32*)RDRAM)
 #define rsp_dmem ((u32*)DMEM)
+#endif
 
-#define dp_start (*(u32*)REG.DPC_START)
-#define dp_end (*(u32*)REG.DPC_END)
-#define dp_current (*(u32*)REG.DPC_CURRENT)
-#define dp_status (*(u32*)REG.DPC_STATUS)
+#define dp_start (*(word*)REG.DPC_START)
+#define dp_end (*(word*)REG.DPC_END)
+#define dp_current (*(word*)REG.DPC_CURRENT)
+#define dp_status (*(word*)REG.DPC_STATUS)
 
-inline u32 READ_RDP_DATA(u32 address)
+#ifdef NATIVE
+inline u32 READ_RDP_DATA(word address) {
+	return rsp_dmem[(address & 0xfff) >> 2];
+}
+#else
+inline u32 READ_RDP_DATA(word address)
 {
 	if (dp_status & 0x1)          // XBUS_DMEM_DMA enabled
 		return rsp_dmem[(address & 0xfff)>>2];
 	else
 		return rdram[(address & 0xffffff)>>2];
 }
+#endif
 
 void RDP_ProcessRDPList()
 {
@@ -590,7 +619,7 @@ void RDP_ProcessRDPList()
 
 	bool setZero = true;
 	while (RDP.cmd_cur != RDP.cmd_ptr) {
-		u32 cmd = (RDP.cmd_data[RDP.cmd_cur] >> 24) & 0x3f;
+		word cmd = (RDP.cmd_data[RDP.cmd_cur] >> 24) & 0x3f;
 
 		if ((((RDP.cmd_ptr - RDP.cmd_cur)&maxCMDMask) * 4) < CmdLength[cmd]) {
 			setZero = false;
@@ -607,10 +636,10 @@ void RDP_ProcessRDPList()
 		RDP.w3 = RDP.cmd_data[RDP.cmd_cur + 3];
 		RSP.cmd = cmd;
 #ifdef DEBUG_DUMP
-		DebugMsg(DEBUG_LOW, "CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", cmd, RDP.w0, RDP.w1);
+		DebugMsg(DEBUG_LOW, "CMD=0x%02lX words.w0=0x%08lX words.w1=0x%08lX\n", cmd, RDP.w0, RDP.w1);
 #endif
 		LLETriangle::get().flush(cmd);
-		LLEcmd[cmd](RDP.w0, RDP.w1);
+		LLEcmd[cmd](Gwords(RDP.w0, RDP.w1));
 
 		RDP.cmd_cur = (RDP.cmd_cur + CmdLength[cmd] / 4) & maxCMDMask;
 	}

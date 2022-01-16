@@ -15,7 +15,7 @@ struct zSortVDest{
 typedef f32 M44[4][4];
 
 void ZSort_Init();
-void ZSort_RDPCMD( u32, u32 _w1 );
+void ZSort_RDPCMD( const Gwords words );
 int Calc_invw( int _w );
 
 #endif // ZSORT_H

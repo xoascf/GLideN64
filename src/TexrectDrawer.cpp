@@ -115,7 +115,7 @@ void TexrectDrawer::_setDrawBuffer()
 		frameBufferList().setCurrentDrawBuffer();
 }
 
-TexrectDrawer::iRect TexrectDrawer::_getiRect(u32 w0, u32 w1) const
+TexrectDrawer::iRect TexrectDrawer::_getiRect(word w0, word w1) const
 {
 	iRect rect;
 	rect.ulx = _SHIFTR(w1, 12, 12);
@@ -141,9 +141,9 @@ bool TexrectDrawer::_lookAhead(bool _checkCoordinates) const
 		return true;
 	}
 
-	auto sideBySide = [&](u32 pc) ->bool {
-		const u32 w0 = *(u32*)&RDRAM[pc];
-		const u32 w1 = *(u32*)&RDRAM[pc + 4];
+	auto sideBySide = [&](word pc) ->bool {
+		const word w0 = *(word*)&RDRAM[pc];
+		const word w1 = *(word*)&RDRAM[pc + sizeof(word)];
 		const iRect nextRect = _getiRect(w0, w1);
 
 		if (COMPARE_COORDS(m_curRect.ulx, nextRect.ulx)) {
