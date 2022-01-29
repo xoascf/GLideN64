@@ -98,6 +98,4 @@ struct RGBA8
 #endif
 };
 
-static_assert(sizeof(RGBA8) == 4);
-
 #endif // TYPES_H

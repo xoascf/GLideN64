@@ -114,7 +114,7 @@ void LogDebug(const char* _fileName, int _line, u16 _type, const char* _format, 
 }
 
 #if defined(OS_WINDOWS) && !defined(MINGW)
-#include "windows/GLideN64_windows.h"
+#include <debugapi.h>
 void debugPrint(const char * format, ...) {
 	char text[256];
 	wchar_t wtext[256];

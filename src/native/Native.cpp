@@ -2,13 +2,13 @@
 #include "N64.h"
 #include "RSP.h"
 #include "Native.h"
-#include "GLideNUI-wtl/GLideNUI.h"
 #include "GLideN64.h"
 #include "Config.h"
 #include "DebugDump.h"
 #include "Config.h"
 #include "DisplayWindow.h"
 #include <wchar.h>
+#include "settings.h"
 
 #define START_WIDTH 1280
 #define START_HEIGHT 720
@@ -152,4 +152,58 @@ extern "C" {
         api().UpdateScreen();
         //Sleep(30);
     }
+}
+
+Config config;
+
+void Config_DoConfig(/*HWND hParent*/)
+{
+    /*if(ConfigOpen)
+        return;
+
+    wchar_t strIniFolderPath[PLUGIN_PATH_SIZE];
+    api().FindPluginPath(strIniFolderPath);
+
+    ConfigOpen = true;
+    const u32 maxMsaa = dwnd().maxMSAALevel();
+    const u32 maxAnisotropy = dwnd().maxAnisotropy();
+    const bool bRestart = RunConfig(strIniFolderPath, api().isRomOpen() ? RSP.romname : nullptr, maxMsaa, maxAnisotropy);
+    if(config.generalEmulation.enableCustomSettings != 0)
+        LoadCustomRomSettings(strIniFolderPath, RSP.romname);
+    config.validate();
+    if(bRestart)
+        dwnd().restart();
+    ConfigOpen = false;*/
+}
+
+void LoadConfig(const wchar_t* _strFileName)
+{
+    std::string IniFolder;
+    uint32_t slength = WideCharToMultiByte(CP_ACP, 0, _strFileName, -1, NULL, 0, NULL, NULL);
+    IniFolder.resize(slength);
+    slength = WideCharToMultiByte(CP_ACP, 0, _strFileName, -1, (LPSTR)IniFolder.c_str(), slength, NULL, NULL);
+    IniFolder.resize(slength - 1); //Remove null end char
+
+    loadSettings(IniFolder.c_str());
+}
+
+void LoadCustomRomSettings(const wchar_t* _strFileName, const char* _romName)
+{
+    std::string IniFolder;
+    uint32_t slength = WideCharToMultiByte(CP_ACP, 0, _strFileName, -1, NULL, 0, NULL, NULL);
+    IniFolder.resize(slength);
+    slength = WideCharToMultiByte(CP_ACP, 0, _strFileName, -1, (LPSTR)IniFolder.c_str(), slength, NULL, NULL);
+    IniFolder.resize(slength - 1); //Remove null end char
+
+    loadCustomRomSettings(IniFolder.c_str(), _romName);
+}
+
+void Config_LoadConfig()
+{
+    wchar_t strIniFolderPath[PLUGIN_PATH_SIZE];
+    api().FindPluginPath(strIniFolderPath);
+    LoadConfig(strIniFolderPath);
+    if(config.generalEmulation.enableCustomSettings != 0)
+        LoadCustomRomSettings(strIniFolderPath, RSP.romname);
+    config.validate();
 }

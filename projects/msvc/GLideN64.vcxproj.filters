@@ -66,9 +66,6 @@
     <Filter Include="Source Files\Graphics\OpenGL\windows">
       <UniqueIdentifier>{e8b5c80f-51ec-45c2-bcdb-5e18868073df}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Graphics\OpenGL\mupen64plus">
-      <UniqueIdentifier>{77259791-9942-4601-a63f-5a0468e69e49}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Graphics\OpenGL\ThreadedOpenGL">
       <UniqueIdentifier>{09919f83-2933-4b48-a4c7-f7bf6e790304}</UniqueIdentifier>
     </Filter>
@@ -77,6 +74,12 @@
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{afe20b4b-eb13-4282-bf72-47335887c770}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\native">
+      <UniqueIdentifier>{1b0ca6a9-2d38-4c4f-948a-adb40a8021c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\native\util">
+      <UniqueIdentifier>{3fbbb3f7-f454-4682-8933-5ca84cb40d6f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -119,41 +122,11 @@
     <ClCompile Include="..\..\src\3DMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\MupenPlusPluginAPI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\CommonPluginAPI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ZilmarPluginAPI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\CommonAPIImpl_common.cpp">
       <Filter>Source Files\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mupenplus\CommonAPIImpl_mupenplus.cpp">
-      <Filter>Source Files\mupenplus</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mupenplus\MupenPlusAPIImpl.cpp">
-      <Filter>Source Files\mupenplus</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\windows\CommonAPIImpl_windows.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\windows\GLideN64_windows.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\windows\ZilmarAPIImpl_windows.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\windows\ScreenShot.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\GLideNUI\Config_GLidenUI.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mupenplus\Config_mupenplus.cpp">
-      <Filter>Source Files\mupenplus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\PostProcessor.cpp">
       <Filter>Source Files</Filter>
@@ -278,9 +251,6 @@
     <ClCompile Include="..\..\src\Graphics\OpenGLContext\windows\WindowsWGL.cpp">
       <Filter>Source Files\Graphics\OpenGL\windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Graphics\OpenGLContext\mupen64plus\mupen64plus_DisplayWindow.cpp">
-      <Filter>Source Files\Graphics\OpenGL\mupen64plus</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Graphics\OpenGLContext\opengl_UnbufferedDrawer.cpp">
       <Filter>Source Files\Graphics\OpenGL</Filter>
     </ClCompile>
@@ -307,9 +277,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Graphics\ObjectHandle.cpp">
       <Filter>Source Files\Graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\RSP_LoadMatrixX86.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\CRC_OPT.cpp">
       <Filter>Source Files</Filter>
@@ -407,12 +374,6 @@
     <ClCompile Include="..\..\src\Graphics\OpenGLContext\GLSL\glsl_FXAA.cpp">
       <Filter>Source Files\Graphics\OpenGL\GLSL</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\windows\MemoryStatus_windows.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\mupenplus\MemoryStatus_mupenplus.cpp">
-      <Filter>Source Files\mupenplus</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Graphics\OpenGLContext\ThreadedOpenGl\opengl_Wrapper.cpp">
       <Filter>Source Files\Graphics\OpenGL\ThreadedOpenGL</Filter>
     </ClCompile>
@@ -443,8 +404,35 @@
     <ClCompile Include="..\..\src\Graphics\OpenGLContext\GLSL\glsl_CombinerProgramUniformFactoryFast.cpp">
       <Filter>Source Files\Graphics\OpenGL\GLSL</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Native.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\src\windows\ScreenShot.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\windows\MemoryStatus_windows.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\windows\GLideN64_windows.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\windows\CommonAPIImpl_windows.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\native\Native.cpp">
+      <Filter>Source Files\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\native\NativeSettings.cpp">
+      <Filter>Source Files\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\native\IniFileClass.cpp">
+      <Filter>Source Files\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\native\util\util.cpp">
+      <Filter>Source Files\native\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\native\GlSettings.cpp">
+      <Filter>Source Files\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\native\FileClass.cpp">
+      <Filter>Source Files\native</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

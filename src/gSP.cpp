@@ -274,8 +274,8 @@ void gSPViewport( u32 v )
 		return;
 	}
 
-#ifdef NATIVE
 	Vp_t* vp = (Vp_t*)address;
+#ifdef NATIVE
 	gSP.viewport.vscale[0] = _FIXED2FLOAT( vp->vscale.x, 2 );
 	gSP.viewport.vscale[1] = _FIXED2FLOAT( vp->vscale.y, 2 );
 	gSP.viewport.vscale[2] = _FIXED2FLOAT( vp->vscale.z, 10 );// * 0.00097847357f;

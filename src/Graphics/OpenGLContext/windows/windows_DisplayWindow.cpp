@@ -4,7 +4,6 @@
 #include <N64.h>
 #include <RSP.h>
 #include <FrameBuffer.h>
-#include <GLideNUI/GLideNUI.h>
 #include <Graphics/Context.h>
 #include <Graphics/Parameters.h>
 #include <DisplayWindow.h>

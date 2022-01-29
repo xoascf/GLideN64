@@ -36,7 +36,7 @@ void Config::resetToDefaults()
 
 	texture.anisotropy = 0;
 	texture.maxAnisotropy = 0;
-	texture.bilinearMode = BILINEAR_STANDARD;
+	texture.bilinearMode = BILINEAR_3POINT;
 	texture.enableHalosRemoval = 0;
 
 	generalEmulation.enableLOD = 1;
@@ -74,7 +74,7 @@ void Config::resetToDefaults()
 	frameBufferEmulation.copyToRDRAM = ctDoubleBuffer;
 	frameBufferEmulation.N64DepthCompare = dcDisable;
 	frameBufferEmulation.forceDepthBufferClear = 0;
-	frameBufferEmulation.aspect = a43;
+	frameBufferEmulation.aspect = aAdjust;
 	frameBufferEmulation.bufferSwapMode = bsOnVerticalInterrupt;
 	frameBufferEmulation.nativeResFactor = 0;
 	frameBufferEmulation.fbInfoReadColorChunk = 0;
@@ -101,8 +101,8 @@ void Config::resetToDefaults()
 	textureFilter.txCacheCompression = 1;
 	textureFilter.txSaveCache = 1;
 
-	textureFilter.txEnhancedTextureFileStorage = 0;
-	textureFilter.txHiresTextureFileStorage = 0;
+	textureFilter.txEnhancedTextureFileStorage = 1;
+	textureFilter.txHiresTextureFileStorage = 1;
 	textureFilter.txNoTextureFileStorage = 0;
 
 	textureFilter.txHiresVramLimit = 0u;
