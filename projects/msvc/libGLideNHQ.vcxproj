@@ -46,7 +46,7 @@
     <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <TargetName>libGLideNHQ</TargetName>
     <TargetExt>.lib</TargetExt>
-    <OutDir>$(SolutionDir)..\..\..\external\$(Platform)\</OutDir>
+    <OutDir>$(MSBuildProjectDirectory)..\..\..\..\external\$(Platform)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
