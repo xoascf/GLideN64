@@ -12,11 +12,8 @@
 #include <wchar.h>
 #include "settings.h"
 
-//#define START_WIDTH 1280
-//#define START_HEIGHT 720
-
-#define START_WIDTH  320
-#define START_HEIGHT 240
+#define START_WIDTH 1280
+#define START_HEIGHT 720
 
 static u64 g_width  = START_WIDTH;
 static u64 g_height = START_HEIGHT;
@@ -99,10 +96,9 @@ extern "C"
     {
         g_width = width;
         g_height = height;
-        config.video.windowedWidth = g_width;
+        config.video.windowedWidth  = g_width;
         config.video.windowedHeight = g_height;
         dwnd().setWindowSize(g_width, g_height);
-        //(*REG.VI_ORIGIN)++;
     }
 }
 
@@ -218,21 +214,21 @@ typedef struct {
 
 extern "C" {
     void gfx_init(const char* romName, OSViMode* viMode) {
-        REG.VI_STATUS = &viMode->comRegs.ctrl;
-        REG.VI_WIDTH = &viMode->comRegs.width;
-        REG.VI_TIMING = &viMode->comRegs.burst;
-        REG.VI_V_SYNC = &viMode->comRegs.vSync;
-        REG.VI_H_SYNC = &viMode->comRegs.hSync;
-        REG.VI_LEAP = &viMode->comRegs.leap;
+        REG.VI_STATUS  = &viMode->comRegs.ctrl;
+        REG.VI_WIDTH   = &viMode->comRegs.width;
+        REG.VI_TIMING  = &viMode->comRegs.burst;
+        REG.VI_V_SYNC  = &viMode->comRegs.vSync;
+        REG.VI_H_SYNC  = &viMode->comRegs.hSync;
+        REG.VI_LEAP    = &viMode->comRegs.leap;
         REG.VI_H_START = &viMode->comRegs.hStart;
         REG.VI_X_SCALE = &viMode->comRegs.xScale;
         REG.VI_V_CURRENT_LINE = &viMode->comRegs.vCurrent;
 
-        REG.VI_ORIGIN = &viMode->fldRegs->origin;
+        REG.VI_ORIGIN  = &viMode->fldRegs->origin;
         REG.VI_Y_SCALE = &viMode->fldRegs->yScale;
         REG.VI_V_START = &viMode->fldRegs->vStart;
         REG.VI_V_BURST = &viMode->fldRegs->vBurst;
-        REG.VI_INTR = &viMode->fldRegs->vIntr;
+        REG.VI_INTR    = &viMode->fldRegs->vIntr;
 
         CheckInterrupts = _CheckInterrupts;
 
@@ -242,11 +238,7 @@ extern "C" {
         RDRAMSize = (word)-1;
 
         api().RomOpen(romName);
-
-        config.frameBufferEmulation.enable = 0;//Frame buffer disabled, will be enabled by OOT
         //config.frameBufferEmulation.aspect = Config::aAdjust;
-        
-        config.generalEmulation.hacks |= hack_subscreen | hack_ZeldaMonochrome;
     }
 
     void gfx_shutdown() {
@@ -289,7 +281,7 @@ extern "C" {
         cfb->fb1 = gfxCtx->curFrameBuffer;
         cfb->swapBuffer = gfxCtx->curFrameBuffer;
 
-        cfb->viMode = gfxCtx->viMode;
+        cfb->viMode   = gfxCtx->viMode;
         cfb->features = gfxCtx->viFeatures;
         cfb->xScale = gfxCtx->xScale;
         cfb->xScale = gfxCtx->yScale;
@@ -297,12 +289,12 @@ extern "C" {
         cfb->updateRate = R_UPDATE_RATE;
 
 
-        REG.VI_STATUS = &cfb->viMode->comRegs.ctrl;
-        REG.VI_WIDTH = &cfb->viMode->comRegs.width;
-        REG.VI_TIMING = &cfb->viMode->comRegs.burst;
-        REG.VI_V_SYNC = &cfb->viMode->comRegs.vSync;
-        REG.VI_H_SYNC = &cfb->viMode->comRegs.hSync;
-        REG.VI_LEAP = &cfb->viMode->comRegs.leap;
+        REG.VI_STATUS  = &cfb->viMode->comRegs.ctrl;
+        REG.VI_WIDTH   = &cfb->viMode->comRegs.width;
+        REG.VI_TIMING  = &cfb->viMode->comRegs.burst;
+        REG.VI_V_SYNC  = &cfb->viMode->comRegs.vSync;
+        REG.VI_H_SYNC  = &cfb->viMode->comRegs.hSync;
+        REG.VI_LEAP    = &cfb->viMode->comRegs.leap;
         REG.VI_H_START = &cfb->viMode->comRegs.hStart;
         REG.VI_X_SCALE = &cfb->viMode->comRegs.xScale;
         REG.VI_V_CURRENT_LINE = &cfb->viMode->comRegs.vCurrent;

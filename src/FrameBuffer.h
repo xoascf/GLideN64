@@ -145,7 +145,7 @@ public:
 
 	static FrameBufferList & get();
 
-//private:
+private:
 	FrameBufferList() : m_pCurrent(nullptr), m_pCopy(nullptr), m_prevColorImageHeight(0) {}
 	FrameBufferList(const FrameBufferList &) = delete;
 

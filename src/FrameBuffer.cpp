@@ -677,8 +677,11 @@ void FrameBufferList::setBufferChanged(f32 _maxY)
 void FrameBufferList::clearBuffersChanged()
 {
 	gDP.colorImage.changed = FALSE;
-	//FrameBuffer * pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN & 0xffffff);
+#ifndef NATIVE
+	FrameBuffer * pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN & 0xffffff);
+#else
 	FrameBuffer* pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN);
+#endif
 	if (pBuffer != nullptr)
 		pBuffer->m_changed = false;
 }
@@ -1230,7 +1233,11 @@ bool FrameBufferList::RdpUpdate::update(RdpUpdateResult & _result)
 
 	if ((vitype & 2) == 0) {
 		prevwasblank = true;
-		//return false;//HACK
+#ifdef NATIVE
+		//return false;//HACK, REG.VI_STATUS might be set up incorrectly
+#else
+		return false
+#endif
 	}
 
 	prevwasblank = false;
