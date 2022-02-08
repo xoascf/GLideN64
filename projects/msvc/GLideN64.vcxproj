@@ -46,7 +46,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
-    <OutDir>$(MSBuildProjectDirectory)\..\..\..\external\$(Platform)\</OutDir>
+    <OutDir>$(SolutionDir)..\..\..\external\$(Platform)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug_mupenplus'">
@@ -193,7 +193,6 @@ copy /Y "$(OutDir)$(TargetName).*" "$(Mupen64PluginsDir_x64)")</Command>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Release_mupenplus|x64'">true</ConformanceMode>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release_mupenplus|x64'">stdcpp17</LanguageStandard>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug_mupenplus|Win32'">MultiThreadedDebug</RuntimeLibrary>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_mupenplus|Win32'">Disabled</Optimization>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
