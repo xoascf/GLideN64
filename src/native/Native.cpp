@@ -131,7 +131,6 @@ extern "C" {
         RDRAMSize = (word)-1;
 
         api().RomOpen(romName);
-        //config.frameBufferEmulation.aspect = Config::aAdjust;
     }
 
     void gfx_shutdown() {
@@ -155,7 +154,6 @@ extern "C" {
 
     void gfx_fbe_enable(int enable) {
         config.frameBufferEmulation.enable = enable;
-        //gfx_resize(g_width, g_height);
     }
 
     void gfx_fbe_sync(GraphicsContext* gfxCtx, GameInfo* GameInfo) {
@@ -171,15 +169,15 @@ extern "C" {
         gfxCtx->curFrameBuffer = &frameBuffers.getCurrent()->m_startAddress;
         gfxCtx->viMode->fldRegs->origin = frameBuffers.getCurrent()->m_startAddress;
 
-        cfb->fb1 = gfxCtx->curFrameBuffer;
+        cfb->fb1        = gfxCtx->curFrameBuffer;
         cfb->swapBuffer = gfxCtx->curFrameBuffer;
 
         cfb->viMode   = gfxCtx->viMode;
         cfb->features = gfxCtx->viFeatures;
-        cfb->xScale = gfxCtx->xScale;
-        cfb->xScale = gfxCtx->yScale;
-        cfb->unk_10 = 0;
-        cfb->updateRate = R_UPDATE_RATE;
+        cfb->xScale   = gfxCtx->xScale;
+        cfb->xScale   = gfxCtx->yScale;
+        cfb->unk_10   = 0;
+        cfb->updateRate = (s8)R_UPDATE_RATE;
 
 
         REG.VI_STATUS  = &cfb->viMode->comRegs.ctrl;
