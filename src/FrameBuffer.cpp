@@ -677,7 +677,8 @@ void FrameBufferList::setBufferChanged(f32 _maxY)
 void FrameBufferList::clearBuffersChanged()
 {
 	gDP.colorImage.changed = FALSE;
-	FrameBuffer * pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN & 0xffffff);
+	//FrameBuffer * pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN & 0xffffff);
+	FrameBuffer* pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN);
 	if (pBuffer != nullptr)
 		pBuffer->m_changed = false;
 }
@@ -1229,7 +1230,7 @@ bool FrameBufferList::RdpUpdate::update(RdpUpdateResult & _result)
 
 	if ((vitype & 2) == 0) {
 		prevwasblank = true;
-		return false;
+		//return false;//HACK
 	}
 
 	prevwasblank = false;
@@ -1247,7 +1248,8 @@ bool FrameBufferList::RdpUpdate::update(RdpUpdateResult & _result)
 	_result.vi_maxhpass = hres_clamped ? 0 : 7;
 	_result.vi_width = _SHIFTR(*REG.VI_WIDTH, 0, 12);
 	_result.vi_lowerfield = lowerfield;
-	_result.vi_origin = _SHIFTR(*REG.VI_ORIGIN, 0, 24);
+	//_result.vi_origin = _SHIFTR(*REG.VI_ORIGIN, 0, 24);
+	_result.vi_origin = *REG.VI_ORIGIN;//This is incorrect REG.VI_ORIGIN should contain only 24 bits of the frame buffer address
 	_result.vi_fsaa = (*REG.VI_STATUS & 512) == 0;
 	_result.vi_divot = (*REG.VI_STATUS & VI_STATUS_DIVOT_ENABLED) != 0;
 	return true;
