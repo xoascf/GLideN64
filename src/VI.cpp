@@ -253,8 +253,11 @@ void VI_UpdateScreen()
 	}
 
 	if (config.frameBufferEmulation.enable) {
-
+#ifndef NATIVE
 		FrameBuffer * pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN & 0xffffff);
+#else
+		FrameBuffer* pBuffer = frameBufferList().findBuffer(*REG.VI_ORIGIN);
+#endif
 		if (pBuffer == nullptr) {
 			gDP.changed |= CHANGED_CPU_FB_WRITE;
 		} else if (!FBInfo::fbInfo.isSupported() &&
@@ -288,8 +291,14 @@ void VI_UpdateScreen()
 						bVIUpdated = true;
 					}
 					const u32 size = *REG.VI_STATUS & VI_STATUS_TYPE_32;
-					if (VI.height > 0 && size > G_IM_SIZ_8b  && VI.width > 0)
+					if (VI.height > 0 && size > G_IM_SIZ_8b && VI.width > 0)
+					{
+#ifndef NATIVE
 						frameBufferList().saveBuffer(*REG.VI_ORIGIN & 0xffffff, G_IM_FMT_RGBA, size, VI.width, true);
+#else
+						frameBufferList().saveBuffer(*REG.VI_ORIGIN, G_IM_FMT_RGBA, size, VI.width, true);
+#endif
+					}
 				}
 			}
 //			if ((((*REG.VI_STATUS) & 3) > 0) && (gDP.colorImage.changed || bCFB)) { // Does not work in release build!!!
@@ -298,7 +307,11 @@ void VI_UpdateScreen()
 					VI_UpdateSize();
 					bVIUpdated = true;
 				}
+#ifndef NATIVE
 				FrameBuffer_CopyFromRDRAM(*REG.VI_ORIGIN & 0xffffff, bCFB);
+#else
+				FrameBuffer_CopyFromRDRAM(*REG.VI_ORIGIN, bCFB);
+#endif
 			}
 			frameBufferList().renderBuffer();
 			frameBufferList().clearBuffersChanged();

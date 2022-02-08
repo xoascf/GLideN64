@@ -7,13 +7,15 @@
 #include "DebugDump.h"
 #include "Config.h"
 #include "DisplayWindow.h"
+#include "FrameBuffer.h"
+#include "FrameBufferInfo.h"
 #include <wchar.h>
 #include "settings.h"
 
 #define START_WIDTH 1280
 #define START_HEIGHT 720
 
-static u64 g_width = START_WIDTH;
+static u64 g_width  = START_WIDTH;
 static u64 g_height = START_HEIGHT;
 
 extern "C" {
@@ -94,35 +96,32 @@ extern "C"
     {
         g_width = width;
         g_height = height;
-        config.video.windowedWidth = g_width;
+        config.video.windowedWidth  = g_width;
         config.video.windowedHeight = g_height;
         dwnd().setWindowSize(g_width, g_height);
-        (*REG.VI_ORIGIN)++;
     }
 }
 
 void _CheckInterrupts() {
 }
 
-
-
 extern "C" {
     void gfx_init(const char* romName, OSViMode* viMode) {
-        REG.VI_STATUS = &viMode->comRegs.ctrl;
-        REG.VI_WIDTH = &viMode->comRegs.width;
-        REG.VI_TIMING = &viMode->comRegs.burst;
-        REG.VI_V_SYNC = &viMode->comRegs.vSync;
-        REG.VI_H_SYNC = &viMode->comRegs.hSync;
-        REG.VI_LEAP = &viMode->comRegs.leap;
+        REG.VI_STATUS  = &viMode->comRegs.ctrl;
+        REG.VI_WIDTH   = &viMode->comRegs.width;
+        REG.VI_TIMING  = &viMode->comRegs.burst;
+        REG.VI_V_SYNC  = &viMode->comRegs.vSync;
+        REG.VI_H_SYNC  = &viMode->comRegs.hSync;
+        REG.VI_LEAP    = &viMode->comRegs.leap;
         REG.VI_H_START = &viMode->comRegs.hStart;
         REG.VI_X_SCALE = &viMode->comRegs.xScale;
         REG.VI_V_CURRENT_LINE = &viMode->comRegs.vCurrent;
 
-        REG.VI_ORIGIN = &viMode->fldRegs->origin;
+        REG.VI_ORIGIN  = &viMode->fldRegs->origin;
         REG.VI_Y_SCALE = &viMode->fldRegs->yScale;
         REG.VI_V_START = &viMode->fldRegs->vStart;
         REG.VI_V_BURST = &viMode->fldRegs->vBurst;
-        REG.VI_INTR = &viMode->fldRegs->vIntr;
+        REG.VI_INTR    = &viMode->fldRegs->vIntr;
 
         CheckInterrupts = _CheckInterrupts;
 
@@ -132,10 +131,6 @@ extern "C" {
         RDRAMSize = (word)-1;
 
         api().RomOpen(romName);
-
-        config.frameBufferEmulation.enable = 0;
-        config.frameBufferEmulation.aspect = Config::aAdjust;
-        
     }
 
     void gfx_shutdown() {
@@ -151,6 +146,55 @@ extern "C" {
         RSP_ProcessDList(task->data_ptr, task->data_size, task->ucode_boot, task->ucode_data, task->ucode_size);
         api().UpdateScreen();
         //Sleep(30);
+    }
+
+    int gfx_fbe_is_enabled() {
+        return config.frameBufferEmulation.enable;
+    }
+
+    void gfx_fbe_enable(int enable) {
+        config.frameBufferEmulation.enable = enable;
+    }
+
+    void gfx_fbe_sync(GraphicsContext* gfxCtx, GameInfo* GameInfo) {
+        if (!config.frameBufferEmulation.enable)
+            return;
+
+        CfbInfo* cfb = gfxCtx->task.framebuffer;//Current frame buffer (according the the game)
+        FrameBufferList& frameBuffers = FrameBufferList::get();//GLideN64's frame buffer list
+
+        if (!frameBuffers.getCurrent())
+            return;
+
+        gfxCtx->curFrameBuffer = &frameBuffers.getCurrent()->m_startAddress;
+        gfxCtx->viMode->fldRegs->origin = frameBuffers.getCurrent()->m_startAddress;
+
+        cfb->fb1        = gfxCtx->curFrameBuffer;
+        cfb->swapBuffer = gfxCtx->curFrameBuffer;
+
+        cfb->viMode   = gfxCtx->viMode;
+        cfb->features = gfxCtx->viFeatures;
+        cfb->xScale   = gfxCtx->xScale;
+        cfb->xScale   = gfxCtx->yScale;
+        cfb->unk_10   = 0;
+        cfb->updateRate = (s8)R_UPDATE_RATE;
+
+
+        REG.VI_STATUS  = &cfb->viMode->comRegs.ctrl;
+        REG.VI_WIDTH   = &cfb->viMode->comRegs.width;
+        REG.VI_TIMING  = &cfb->viMode->comRegs.burst;
+        REG.VI_V_SYNC  = &cfb->viMode->comRegs.vSync;
+        REG.VI_H_SYNC  = &cfb->viMode->comRegs.hSync;
+        REG.VI_LEAP    = &cfb->viMode->comRegs.leap;
+        REG.VI_H_START = &cfb->viMode->comRegs.hStart;
+        REG.VI_X_SCALE = &cfb->viMode->comRegs.xScale;
+        REG.VI_V_CURRENT_LINE = &cfb->viMode->comRegs.vCurrent;
+
+        REG.VI_ORIGIN  = &cfb->viMode->fldRegs->origin;//This is incorrect REG.VI_ORIGIN should contain only 24 bits of the frame buffer address
+        REG.VI_Y_SCALE = &cfb->viMode->fldRegs->yScale;
+        REG.VI_V_START = &cfb->viMode->fldRegs->vStart;
+        REG.VI_V_BURST = &cfb->viMode->fldRegs->vBurst;
+        REG.VI_INTR    = &cfb->viMode->fldRegs->vIntr;
     }
 }
 
