@@ -97,11 +97,16 @@ extern "C"
     void gfx_resize(long width, long height)
     {
         g_originalWidth = width;
-        g_width  = width;
+
+        if (config.frameBufferEmulation.aspect == 1)//Running in 4:3 mode?
+            g_width = (height*4)/3;
+        else
+            g_width = width;
         g_height = height;
-        config.video.windowedWidth  = g_width;
-        config.video.windowedHeight = g_height;
-        dwnd().setWindowSize(g_width, g_height);
+
+        config.video.windowedWidth  = width;
+        config.video.windowedHeight = height;
+        dwnd().setWindowSize(width, height);
     }
 }
 
