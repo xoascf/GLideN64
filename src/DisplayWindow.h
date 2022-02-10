@@ -38,6 +38,7 @@ public:
 	bool isFullscreen() const { return m_bFullscreen; }
 	bool isAdjustScreen() const { return m_bAdjustScreen; }
 	bool isResizeWindow() const { return m_bResizeWindow; }
+	void forceResizeWindow() { m_bResizeWindow = true; resizeWindow(); }
 
 	GraphicsDrawer & getDrawer() { return m_drawer; }
 
