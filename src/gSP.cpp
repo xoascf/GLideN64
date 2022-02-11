@@ -2162,11 +2162,11 @@ void gSPSetupFunctions()
 
 #ifdef NATIVE
 word RSP_SegmentToPhysical(word segaddr) {
-    if (RSP.translateSegment) {
+    if (RSP.translateSegment || (segaddr & 1)) {
         RSP.translateSegment = false;
 
         const u32 idx = (segaddr >> 24) & 0x0F;
-        const word addr = (segaddr & 0x00FFFFFF);
+        const word addr = (segaddr & 0x00FFFFFE);
 
         DebugMsg(DEBUG_NORMAL, "Translatings segment address %x (%x) -> %x\n", segaddr, idx, gSP.segment[idx] + addr);
         return gSP.segment[idx] + addr;
