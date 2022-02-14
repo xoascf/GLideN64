@@ -140,6 +140,22 @@ TxUtil::checksum64(uint8 *src, int width, int height, int size, int rowStride, u
  *          (unsigned short)(rdp.tiles[tile].format << 8 | rdp.tiles[tile].size),
  *          bpl);
  */
+
+uint32_t my_byteswap32(uint32_t num)
+{
+	uint32_t b0, b1, b2, b3;
+	uint32_t res;
+
+	b0 = (num & 0x000000ff) << 24u;
+	b1 = (num & 0x0000ff00) << 8u;
+	b2 = (num & 0x00ff0000) >> 8u;
+	b3 = (num & 0xff000000) >> 24u;
+
+	res = b0 | b1 | b2 | b3;
+	return res;
+}
+
+
 uint32
 TxUtil::RiceCRC32(const uint8* src, int width, int height, int size, int rowStride)
 {
@@ -193,6 +209,11 @@ loop1:
 			while (x >= 0)
 			{
 				esi = *(uint32*)(src + x);
+
+#ifdef NATIVE
+				esi = my_byteswap32(esi);
+#endif
+
 				esi ^= x;
 
 				crc32Ret = (crc32Ret << 4) + ((crc32Ret >> 28) & 15);
@@ -215,17 +236,21 @@ loop1:
 static
 uint8 CalculateMaxCI8b(const uint8* src, uint32 width, uint32 height, uint32 rowStride)
 {
-	uint8 val = 0;
+	uint32_t depth = rowStride / width;
+	uint8 max = 0;
+
 	for (uint32 y = 0; y < height; ++y) {
 		const uint8 * buf = src + rowStride * y;
-		for (uint32 x = 0; x<width; ++x) {
-			if (buf[x] > val)
-				val = buf[x];
-			if (val == 0xFF)
+		for (uint32 x = 0; x < width; ++x) {
+			uint8 val = buf[x];
+
+			if (buf[x] > max)
+				max = buf[x];
+			if (max == 0xFF)
 				return 0xFF;
 		}
 	}
-	return val;
+	return max;
 }
 
 static
@@ -236,7 +261,7 @@ uint8 CalculateMaxCI4b(const uint8* src, uint32 width, uint32 height, uint32 row
 	width >>= 1;
 	for (uint32 y = 0; y < height; ++y) {
 		const uint8 * buf = src + rowStride * y;
-		for (uint32 x = 0; x<width; ++x) {
+		for (uint32 x = 0; x < width; ++x) {
 			val1 = buf[x] >> 4;
 			val2 = buf[x] & 0xF;
 			if (val1 > val) val = val1;

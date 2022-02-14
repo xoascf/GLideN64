@@ -54,7 +54,7 @@ void _ProcessDList()
 #else
 		RSP.words = *(Gwords*)&RDRAM[RSP.PC[RSP.PCi]];
 		RSP.cmd = _SHIFTR(RSP.words.w0, 24, 8);
-#endif
+#endif 
 
 #ifdef DEBUG_DUMP
 		DebugMsg(DEBUG_LOW, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(RSP.words.w0, 24, 8), RSP.words.w0, RSP.words.w1);

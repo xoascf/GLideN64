@@ -139,6 +139,8 @@ extern "C" {
         RDRAMSize = (word)-1;
 
         api().RomOpen(romName);
+
+        config.textureFilter.txHiresEnable = 1;
     }
 
     void gfx_force_43(bool enable) {
