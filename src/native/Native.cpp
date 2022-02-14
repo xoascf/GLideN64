@@ -18,6 +18,7 @@
 static u64 g_originalWidth = START_WIDTH;//Size set by the end-user
 static u64 g_width  = START_WIDTH;//Current size
 static u64 g_height = START_HEIGHT;
+static bool highres_hts = true;
 
 extern "C" {
     u64 gfx_width()
@@ -142,6 +143,12 @@ extern "C" {
 
         config.textureFilter.txHiresEnable = 1;
         wsprintf(config.textureFilter.txCachePath, L".");
+        config.textureFilter.txHiresTextureFileStorage = highres_hts ? 1 : 0;
+    }
+
+    void gfx_switch_to_htc(bool enable) {
+        highres_hts = !enable;
+        config.textureFilter.txHiresTextureFileStorage = enable ? 0 : 1;
     }
 
     bool gfx_is_highres_enabled() {
