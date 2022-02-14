@@ -38,6 +38,11 @@
 #include <malloc.h>
 #endif
 
+#define SWAP32(data)   \
+( (((data) >> 24) & 0x000000FF) | (((data) >>  8) & 0x0000FF00) | \
+  (((data) <<  8) & 0x00FF0000) | (((data) << 24) & 0xFF000000) ) 
+
+
 /*
  * Utilities
  ******************************************************************************/
@@ -141,21 +146,6 @@ TxUtil::checksum64(uint8 *src, int width, int height, int size, int rowStride, u
  *          bpl);
  */
 
-uint32_t my_byteswap32(uint32_t num)
-{
-	uint32_t b0, b1, b2, b3;
-	uint32_t res;
-
-	b0 = (num & 0x000000ff) << 24u;
-	b1 = (num & 0x0000ff00) << 8u;
-	b2 = (num & 0x00ff0000) >> 8u;
-	b3 = (num & 0xff000000) >> 24u;
-
-	res = b0 | b1 | b2 | b3;
-	return res;
-}
-
-
 uint32
 TxUtil::RiceCRC32(const uint8* src, int width, int height, int size, int rowStride)
 {
@@ -209,9 +199,9 @@ loop1:
 			while (x >= 0)
 			{
 				esi = *(uint32*)(src + x);
-
+				
 #ifdef NATIVE
-				esi = my_byteswap32(esi);
+				esi = SWAP32(esi);
 #endif
 
 				esi ^= x;

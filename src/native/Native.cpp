@@ -141,6 +141,15 @@ extern "C" {
         api().RomOpen(romName);
 
         config.textureFilter.txHiresEnable = 1;
+        wsprintf(config.textureFilter.txCachePath, L".");
+    }
+
+    bool gfx_is_highres_enabled() {
+        return config.textureFilter.txHiresEnable;
+    }
+
+    void gfx_highres_enable(bool enable) {
+        config.textureFilter.txHiresEnable = enable;
     }
 
     void gfx_force_43(bool enable) {
