@@ -960,7 +960,7 @@ bool TxFileStorage::get(Checksum checksum, N64FormatSize n64FmtSz, GHQTexInfo *i
 				if (patch->second == 0)
 					return false;
 
-				bool ret = get(patch->second, info);
+				bool ret = get(patch->second, n64FmtSz, info);
 				if (!ret)
 					int t = 54;//Breakpoint
 				return ret;
