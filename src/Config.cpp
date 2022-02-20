@@ -62,7 +62,9 @@ void Config::resetToDefaults()
 	generalEmulation.enableFragmentDepthWrite = 1;
 #endif
 
-	graphics2D.correctTexrectCoords = tcDisable;
+	//Fix the texture coordinates when two 2D rectangles are next to each other
+	//The game creates a gap of half a pixel
+	graphics2D.correctTexrectCoords = tcSmart;
 	graphics2D.enableNativeResTexrects = NativeResTexrectsMode::ntDisable;
 	graphics2D.bgMode = BGMode::bgStripped;
 	graphics2D.enableTexCoordBounds = 0;

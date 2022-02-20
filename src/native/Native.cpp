@@ -139,10 +139,6 @@ extern "C" {
         RDRAMSize = (word)-1;
 
         api().RomOpen(romName);
-
-        //Fix the texture coordinates when two 2D rectangles are next to each other
-        //The game creates a gap of half a pixel
-        config.graphics2D.correctTexrectCoords = 1;
     }
 
     void gfx_force_43(bool enable) {
