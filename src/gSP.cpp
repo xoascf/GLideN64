@@ -276,7 +276,11 @@ void gSPViewport( u32 v )
 {
 	word address = RSP_SegmentToPhysical( v );
 
+#ifndef NATIVE
 	if ((address + 16) > RDRAMSize) {
+#else
+	if (!address || (address + 16) > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load viewport from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPViewport( 0x%08X );\n", v);
 		return;
@@ -401,7 +405,11 @@ void gSPLightCBFD( u32 l, s32 n )
 {
 	word addrByte = RSP_SegmentToPhysical( l );
 
+#ifndef NATIVE
 	if ((addrByte + sizeof( Light )) > RDRAMSize) {
+#else
+	if (!addrByte || (addrByte + sizeof( Light )) > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load light from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPLight( 0x%08X, LIGHT_%i );\n", l, n );
 		return;
@@ -468,7 +476,11 @@ void gSPLookAt( u32 _l, u32 _n )
 {
 	word address = RSP_SegmentToPhysical(_l);
 
+#ifndef NATIVE
 	if ((address + sizeof(Light)) > RDRAMSize) {
+#else
+	if (!address || (address + sizeof(Light)) > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load light from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPLookAt( 0x%08X, LOOKAT_%i );\n", _l, _n);
 		return;
