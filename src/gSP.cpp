@@ -1358,7 +1358,11 @@ void gSPDisplayList( word dl )
 {
 	word address = RSP_SegmentToPhysical( dl );
 
+#ifndef NATIVE
 	if ((address + sizeof(Gwords)) > RDRAMSize) {
+#else
+	if (!address || (address + sizeof(Gwords)) > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load display list from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPDisplayList( 0x%08X );\n", dl );
 		return;
