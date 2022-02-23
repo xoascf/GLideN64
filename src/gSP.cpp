@@ -166,7 +166,11 @@ void gSPMatrix( u32 matrix, u8 param )
 	f32 mtx[4][4];
 	word address = RSP_SegmentToPhysical( matrix );
 
+#ifndef NATIVE
 	if (address + 64 > RDRAMSize) {
+#else
+	if (!address || address + 64 > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load matrix from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPMatrix( 0x%08X, %s | %s | %s );\n",
 			matrix,
@@ -221,7 +225,11 @@ void gSPDMAMatrix( u32 matrix, u8 index, u8 multiply )
 	f32 mtx[4][4];
 	word address = gSP.DMAOffsets.mtx + RSP_SegmentToPhysical( matrix );
 
+#ifndef NATIVE
 	if (address + 64 > RDRAMSize) {
+#else
+	if (!address || address + 64 > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load matrix from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPDMAMatrix( 0x%08X, %i, %s );\n",
 			matrix, index, multiply ? "TRUE" : "FALSE");
@@ -323,7 +331,11 @@ void gSPForceMatrix( u32 mptr )
 {
 	word address = RSP_SegmentToPhysical( mptr );
 
+#ifndef NATIVE
 	if (address + 64 > RDRAMSize) {
+#else
+	if (!address || address + 64 > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load from invalid address");
 		DebugMsg(DEBUG_NORMAL, "gSPForceMatrix( 0x%08X );\n", mptr);
 		return;
