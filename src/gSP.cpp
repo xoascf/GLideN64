@@ -341,7 +341,11 @@ void gSPLight( u32 l, s32 n )
 	--n;
 	word addrByte = RSP_SegmentToPhysical( l );
 
+#ifndef NATIVE
 	if ((addrByte + sizeof( Light )) > RDRAMSize) {
+#else
+	if (!addrByte || (addrByte + sizeof( Light )) > RDRAMSize) {
+#endif
 		DebugMsg(DEBUG_NORMAL | DEBUG_ERROR, "// Attempting to load light from invalid address\n");
 		DebugMsg(DEBUG_NORMAL, "gSPLight( 0x%08X, LIGHT_%i );\n", l, n );
 		return;
