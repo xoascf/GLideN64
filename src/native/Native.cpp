@@ -158,6 +158,10 @@ extern "C" {
         g_width = newWidth;
     }
 
+    bool gfx_force_43_enabled() {
+        return config.frameBufferEmulation.aspect == 1;
+    }
+
     void gfx_shutdown() {
         RDRAMSize = 0;
         api().RomClosed();
