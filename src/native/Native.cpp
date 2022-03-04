@@ -18,6 +18,7 @@
 static u64 g_originalWidth = START_WIDTH;//Size set by the end-user
 static u64 g_width  = START_WIDTH;//Current size
 static u64 g_height = START_HEIGHT;
+static int highres_enabled = 0;//1 if HD texture mode is enabled
 static bool highres_hts = true;
 
 extern "C" {
@@ -141,7 +142,7 @@ extern "C" {
 
         api().RomOpen(romName);
 
-        config.textureFilter.txHiresEnable = 1;
+        config.textureFilter.txHiresEnable = highres_enabled;
         wsprintf(config.textureFilter.txCachePath, L".");
         config.textureFilter.txHiresTextureFileStorage = highres_hts ? 1 : 0;
     }
@@ -152,6 +153,7 @@ extern "C" {
     }
 
     bool gfx_is_highres_enabled() {
+        highres_enabled = 1;
         return config.textureFilter.txHiresEnable;
     }
 
