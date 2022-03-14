@@ -135,6 +135,14 @@ struct Checksum
 	operator uint64() const {
 		return _checksum;
 	}
+
+	bool operator ==(const Checksum& rhs) {
+		return _checksum == rhs._checksum;
+	}
+
+	bool operator !=(const Checksum& rhs) {
+		return _checksum != rhs._checksum;
+	}
 };
 
 struct N64FormatSize
