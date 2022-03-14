@@ -204,6 +204,8 @@ const char* Config::hotkeyIniName(u32 _idx)
 		return "hkOsdRenderingResolution";
 	case Config::HotKey::hkForceGammaCorrection:
 		return "hkForceGammaCorrection";
+	case Config::HotKey::hkInaccurateTexCords:
+		return "hkInaccurateTexCords";
 	}
 	return nullptr;
 }
@@ -240,6 +242,8 @@ const char* Config::enabledHotkeyIniName(u32 _idx)
 		return "hkOsdRenderingResolutionEnabled";
 	case Config::HotKey::hkForceGammaCorrection:
 		return "hkForceGammaCorrectionEnabled";
+	case Config::HotKey::hkInaccurateTexCords:
+		return "hkInaccurateTexCordsEnabled";
 	}
 	return nullptr;
 }
