@@ -226,14 +226,11 @@ loop1:
 static
 uint8 CalculateMaxCI8b(const uint8* src, uint32 width, uint32 height, uint32 rowStride)
 {
-	uint32_t depth = rowStride / width;
 	uint8 max = 0;
 
 	for (uint32 y = 0; y < height; ++y) {
 		const uint8 * buf = src + rowStride * y;
 		for (uint32 x = 0; x < width; ++x) {
-			uint8 val = buf[x];
-
 			if (buf[x] > max)
 				max = buf[x];
 			if (max == 0xFF)
