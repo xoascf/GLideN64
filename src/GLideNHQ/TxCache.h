@@ -72,8 +72,8 @@ protected:
 
 	bool save();
 	bool load(bool force);
-	bool del(Checksum checksum); /* checksum hi:palette low:texture */
-	bool isCached(Checksum checksum); /* checksum hi:palette low:texture */
+	bool del(Checksum checksum);
+	bool isCached(Checksum checksum, N64FormatSize n64FmtSz) const;
 	void clear();
 	uint64 size() const; // number of elements
 	uint64 totalSize() const; // size of elements in bytes
@@ -88,7 +88,7 @@ public:
 	virtual ~TxCache();
 	TxCache(uint32 options, uint64 cacheLimit, const wchar_t *cachePath, const wchar_t *ident, dispInfoFuncExt callback);
 	bool add(Checksum checksum, GHQTexInfo *info, int dataSize = 0);
-	bool get(Checksum checksum, GHQTexInfo *info);
+	bool get(Checksum checksum, N64FormatSize n64FmtSz, GHQTexInfo *info);
 	bool empty() const;
 };
 
