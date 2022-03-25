@@ -95,7 +95,7 @@ void Config::resetToDefaults()
 	textureFilter.txFilterIgnoreBG = 0;
 	textureFilter.txCacheSize = 100 * gc_uMegabyte;
 
-	textureFilter.txHiresEnable = 0;
+	textureFilter.txHiresEnable = 1;
 	textureFilter.txHiresFullAlphaChannel = 1;
 	textureFilter.txHresAltCRC = 0;
 
