@@ -50,6 +50,12 @@ struct  Checksum
 	operator uint64() {
 		return _checksum;
 	}
+	bool operator ==(const Checksum& rhs) {
+		return _checksum == rhs._checksum;
+	}
+	bool operator !=(const Checksum& rhs) {
+		return _checksum != rhs._checksum;
+	}
 };
 
 class TxCacheImpl;

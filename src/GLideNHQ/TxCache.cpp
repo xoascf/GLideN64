@@ -559,8 +559,12 @@ TxFileStorage::TxFileStorage(uint32 options,
 
 void TxFileStorage::buildFullPath()
 {
-	char cbuf[MAX_PATH * 2];
+	char cbuf[MAX_PATH * 2];	
+#ifdef RELATIVE_PATHS
+	tx_wstring filename = _filename;
+#else
 	tx_wstring filename = _cachePath + OSAL_DIR_SEPARATOR_STR + _filename;
+#endif
 	wcstombs(cbuf, filename.c_str(), MAX_PATH * 2);
 	_fullPath = cbuf;
 }
@@ -743,7 +747,7 @@ bool TxFileStorage::add(Checksum checksum, GHQTexInfo *info, int dataSize)
 	return true;
 }
 
-bool TxFileStorage::get(Checksum checksum, GHQTexInfo *info)
+bool TxFileStorage::get(Checksum checksum, GHQTexInfo* info)
 {
 	if (!checksum || _storage.empty())
 		return false;
