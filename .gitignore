@@ -8,6 +8,7 @@ Roms/
 *.suo
 *.sdf
 *.user
+src/GLideNU*
 src/Revision.h
 /projects/msvc/.vs
 /projects/msvc/GLideN64.VC.VC.opendb

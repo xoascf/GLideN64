@@ -18,7 +18,7 @@
 static u64 g_originalWidth = START_WIDTH;//Size set by the end-user
 static u64 g_width  = START_WIDTH;//Current size
 static u64 g_height = START_HEIGHT;
-static int highres_enabled = 0;//1 if HD texture mode is enabled
+static int highres_enabled = 1;//0 if HD texture mode is disabled
 static bool highres_hts = true;
 
 extern "C" {
