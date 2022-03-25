@@ -31,33 +31,6 @@
 #include "TxInternal.h"
 #include "TxUtil.h"
 
-struct  Checksum
-{
-	union
-	{
-		uint64 _checksum; /* checksum hi:palette low:texture */
-		struct
-		{
-			uint32 _low;
-			uint32 _hi;
-		};
-	};
-
-	Checksum(uint64 checksum) : _checksum(checksum) {}
-	operator bool() {
-		return _checksum != 0;
-	}
-	operator uint64() {
-		return _checksum;
-	}
-	bool operator ==(const Checksum& rhs) {
-		return _checksum == rhs._checksum;
-	}
-	bool operator !=(const Checksum& rhs) {
-		return _checksum != rhs._checksum;
-	}
-};
-
 class TxCacheImpl;
 
 class TxCache
