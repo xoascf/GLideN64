@@ -251,7 +251,7 @@ u32 GetIA88_RGBA4444(u16 offset, u16 x, u16 i, u8 palette)
 inline u32 Get32BitColor(u16 offset, u16 x, u16 i)
 {
 	u32* tmem32 = reinterpret_cast<u32*>(TMEM);
-	return tmem32[((offset << 1) + (x ^ i)) & 0x3FF];
+	return tmem32[((offset << 1) + (x ^ i)) & LOAD_BLOCK32_MASK];
 }
 
 u32 GetRGBA8888_RGBA8888(u16 offset, u16 x, u16 i, u8 palette)
@@ -865,8 +865,8 @@ void _calcTileSizes(u32 _t, TileSizes & _sizes, gDPTile * _pLoadTile)
 	pTile->masks = pTile->originalMaskS;
 	pTile->maskt = pTile->originalMaskT;
 
-	u32 tileWidth = ((pTile->lrs - pTile->uls) & 0x03FF) + 1;
-	u32 tileHeight = ((pTile->lrt - pTile->ult) & 0x03FF) + 1;
+	u32 tileWidth = ((pTile->lrs - pTile->uls) & LOAD_BLOCK32_MASK) + 1;
+	u32 tileHeight = ((pTile->lrt - pTile->ult) & LOAD_BLOCK32_MASK) + 1;
 
 	const u32 tMemMask = gDP.otherMode.textureLUT == G_TT_NONE ? 0x1FF : 0xFF;
 	gDPLoadTileInfo &info = gDP.loadInfo[pTile->tmem & tMemMask];
@@ -1332,13 +1332,13 @@ void TextureCache::_getTextureDestData(CachedTexture& tmptex,
 			for (x = 0; x < tmptex.width; ++x) {
 				tx = min(x, clampSClamp) & maskSMask;
 
-				u32 taddr = ((tline + tx) ^ xorval) & 0x3ff;
+				u32 taddr = ((tline + tx) ^ xorval) & LOAD_BLOCK32_MASK;
 #ifdef NATIVE
 				gr = tmem16[taddr];
-				ab = tmem16[taddr | 0x400];
+				ab = tmem16[taddr | LOAD_BLOCK32_MAX];
 #else
 				gr = swapword(tmem16[taddr]);
-				ab = swapword(tmem16[taddr | 0x400]);
+				ab = swapword(tmem16[taddr | LOAD_BLOCK32_MAX]);
 #endif
 				pDest[j++] = (ab << 16) | gr;
 			}

@@ -5,7 +5,7 @@ u8* HEADER;
 u8 *DMEM;
 u8 *IMEM;
 #endif
-u64 TMEM[512];
+u64 TMEM[TMEM_SIZE];
 #ifndef NATIVE
 u8 *RDRAM;
 #endif

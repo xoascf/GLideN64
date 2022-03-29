@@ -131,13 +131,18 @@ void RDP_SetTile( const Gwords words )
 				_SHIFTR( words.w1,  0, 4 ) );	// shifts
 }
 
+#define LRS_UPPER_VALUE (_SHIFTR(words.w1, 27, 5) << 12)
+#define TILE_VALUE _SHIFTR(words.w1, 24, 3)
+#define LRS_VALUE _SHIFTR(words.w1, 12, 12)
+#define LRT_VALUE _SHIFTR(words.w1, 0, 12)
+
 void RDP_LoadTile( const Gwords words )
 {
-	gDPLoadTile( _SHIFTR( words.w1, 24,  3 ),		// tile
+	gDPLoadTile( TILE_VALUE,		// tile
 				 _SHIFTR( words.w0, 12, 12 ),		// uls
 				 _SHIFTR( words.w0,  0, 12 ),		// ult
-				 _SHIFTR( words.w1, 12, 12 ),		// lrs
-				 _SHIFTR( words.w1,  0, 12 ) );	// lrt
+				 LRS_VALUE | LRS_UPPER_VALUE,		// lrs
+				 LRT_VALUE );	// lrt
 }
 
 static u32 lbw0, lbw1;
@@ -145,11 +150,11 @@ void RDP_LoadBlock( const Gwords words )
 {
 	lbw0 = words.w0;
 	lbw1 = words.w1;
-	gDPLoadBlock( _SHIFTR( words.w1, 24,  3 ),	// tile
+	gDPLoadBlock( TILE_VALUE,	// tile
 				  _SHIFTR( words.w0, 12, 12 ),	// uls
 				  _SHIFTR( words.w0,  0, 12 ),	// ult
-				  _SHIFTR( words.w1, 12, 12 ),	// lrs
-				  _SHIFTR( words.w1,  0, 12 ) );	// dxt
+				  LRS_VALUE | LRS_UPPER_VALUE,	// lrs
+				  LRT_VALUE );	// dxt
 }
 
 void RDP_RepeatLastLoadBlock()
@@ -159,20 +164,20 @@ void RDP_RepeatLastLoadBlock()
 
 void RDP_SetTileSize( const Gwords words )
 {
-	gDPSetTileSize( _SHIFTR( words.w1, 24,  3 ),		// tile
+	gDPSetTileSize( TILE_VALUE,		// tile
 					_SHIFTR( words.w0, 12, 12 ),		// uls
 					_SHIFTR( words.w0,  0, 12 ),		// ult
-					_SHIFTR( words.w1, 12, 12 ),		// lrs
-					_SHIFTR( words.w1,  0, 12 ) );	// lrt
+					LRS_VALUE | LRS_UPPER_VALUE,		// lrs
+					LRT_VALUE );	// lrt
 }
 
 void RDP_LoadTLUT( const Gwords words )
 {
-	gDPLoadTLUT( _SHIFTR( words.w1, 24,  3 ),	// tile
+	gDPLoadTLUT( TILE_VALUE,	// tile
 				  _SHIFTR( words.w0, 12, 12 ),	// uls
 				  _SHIFTR( words.w0,  0, 12 ),	// ult
-				  _SHIFTR( words.w1, 12, 12 ),	// lrs
-				  _SHIFTR( words.w1,  0, 12 ) );	// lrt
+				  LRS_VALUE | LRS_UPPER_VALUE,	// lrs
+				  LRT_VALUE );	// lrt
 }
 
 void RDP_SetOtherMode( const Gwords words )

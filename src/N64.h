@@ -3,13 +3,9 @@
 
 #include "Types.h"
 
-/*
-#ifdef NATIVE
-#define RDRAM_PTR(a) ((u8*)a)
-#else
-#define RDRAM_PTR(a) RDRAM[a]
-#endif
-*/
+#define TMEM_SIZE (1024 * 1024 * 4)
+#define LOAD_BLOCK32_MAX (0x0400 * 16)
+#define LOAD_BLOCK32_MASK ((0x0400 * 16) - 1)
 
 #define MI_INTR_DP		0x20		// Bit 5: DP intr
 
@@ -59,7 +55,7 @@ extern u8 *DMEM;
 extern u8 *IMEM;
 extern u8 *RDRAM;
 #endif
-extern u64 TMEM[512];
+extern u64 TMEM[TMEM_SIZE];
 extern word RDRAMSize;
 extern bool ConfigOpen;
 

@@ -352,7 +352,7 @@ void gDPSetTileSize( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
 {
 	gDP.tiles[tile].uls = _SHIFTR( uls, 2, 10 );
 	gDP.tiles[tile].ult = _SHIFTR( ult, 2, 10 );
-	gDP.tiles[tile].lrs = _SHIFTR( lrs, 2, 10 );
+	gDP.tiles[tile].lrs = _SHIFTR( lrs, 2, 15 );
 	gDP.tiles[tile].lrt = _SHIFTR( lrt, 2, 10 );
 
 	gDP.tiles[tile].fuls = _FIXED2FLOAT( uls, 2 );
@@ -478,13 +478,13 @@ void gDPLoadTile32b(u32 uls, u32 ult, u32 lrs, u32 lrt)
 		xorval = (j & 1) ? 3 : 1;
 		for (u32 i = 0; i < width; ++i) {
 			c = src[addr + s + i];
-			ptr = ((tline + i) ^ xorval) & 0x3ff;
+			ptr = ((tline + i) ^ xorval) & LOAD_BLOCK32_MASK;
 #ifdef NATIVE
-			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c >> 16;
 			tmem16[ptr] = c & 0xffff;
 #else
 			tmem16[ptr] = c >> 16;
-			tmem16[ptr | 0x400] = c & 0xffff;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c & 0xffff;
 #endif
 		}
 	}
@@ -501,8 +501,8 @@ void gDPLoadTile(u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt)
 	if (gDP.loadTile->lrs < gDP.loadTile->uls || gDP.loadTile->lrt < gDP.loadTile->ult)
 		return;
 
-	const u32 width = (gDP.loadTile->lrs - gDP.loadTile->uls + 1) & 0x03FF;
-	const u32 height = (gDP.loadTile->lrt - gDP.loadTile->ult + 1) & 0x03FF;
+	const u32 width = (gDP.loadTile->lrs - gDP.loadTile->uls + 1) & LOAD_BLOCK32_MASK;
+	const u32 height = (gDP.loadTile->lrt - gDP.loadTile->ult + 1) & LOAD_BLOCK32_MASK;
 	const u32 bpl = gDP.loadTile->line << 3;
 
 	u32 alignedWidth = width;
@@ -572,9 +572,9 @@ void gDPLoadTile(u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt)
 			if (address + bpl > RDRAMSize)
 				UnswapCopyWrap(RDRAM, address, reinterpret_cast<u8*>(TMEM), tmemAddr << 3, 0xFFF, RDRAMSize - address);
 			else
-				UnswapCopyWrap(RDRAM, address, reinterpret_cast<u8*>(TMEM), tmemAddr << 3, 0xFFF, bpr);
+				UnswapCopyWrap(RDRAM, address, reinterpret_cast<u8*>(TMEM), tmemAddr << 3, (0x1000 * 8 - 1), bpr);
 			if (y & 1)
-				DWordInterleaveWrap(reinterpret_cast<u32*>(TMEM), tmemAddr << 1, 0x3FF, qwpr);
+				DWordInterleaveWrap(reinterpret_cast<u32*>(TMEM), tmemAddr << 1, LOAD_BLOCK32_MASK, qwpr);
 
 			address += gDP.textureImage.bpl;
 			if (address >= RDRAMSize)
@@ -602,8 +602,10 @@ void gDPLoadBlock32(u32 uls,u32 lrs, u32 dxt)
 	u32 width = (lrs - uls + 1) << 2;
 	if (width == 4) // lr_s == 0, 1x1 texture
 		width = 1;
-	else if (width & 7)
-		width = (width & (~7U)) + 8;
+	else if(width & 7)
+	{
+		//width = (width & (~7U)) + 8;
+	}
 
 	if (dxt != 0) {
 		u32 j = 0;
@@ -617,36 +619,36 @@ void gDPLoadBlock32(u32 uls,u32 lrs, u32 dxt)
 			t = ((j >> 11) & 1) ? 3 : 1;
 			if (t != oldt)
 				i += line;
-			ptr = ((tb + i) ^ t) & 0x3ff;
+			ptr = ((tb + i) ^ t) & LOAD_BLOCK32_MASK;
 			c = src[addr + i];
 #ifdef NATIVE
-			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c >> 16;
 			tmem16[ptr] = c & 0xffff;
-			ptr = ((tb + i + 1) ^ t) & 0x3ff;
+			ptr = ((tb + i + 1) ^ t) & LOAD_BLOCK32_MASK;
 			c = src[addr + i + 1];
-			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c >> 16;
 			tmem16[ptr] = c & 0xffff;
 #else
 			tmem16[ptr] = c >> 16;
-			tmem16[ptr | 0x400] = c & 0xffff;
-			ptr = ((tb + i + 1) ^ t) & 0x3ff;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c & 0xffff;
+			ptr = ((tb + i + 1) ^ t) & LOAD_BLOCK32_MASK;
 			c = src[addr + i + 1];
 			tmem16[ptr] = c >> 16;
-			tmem16[ptr | 0x400] = c & 0xffff;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c & 0xffff;
 #endif
 			j += dxt;
 		}
 	} else {
 		u32 c, ptr;
 		for (u32 i = 0; i < width; i++) {
-			ptr = ((tb + i) ^ 1) & 0x3ff;
+			ptr = ((tb + i) ^ 1) & LOAD_BLOCK32_MASK;
 			c = src[addr + i];
 #ifdef NATIVE
-			tmem16[ptr | 0x400] = c >> 16;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c >> 16;
 			tmem16[ptr] = c & 0xffff;
 #else
 			tmem16[ptr] = c >> 16;
-			tmem16[ptr | 0x400] = c & 0xffff;
+			tmem16[ptr | LOAD_BLOCK32_MAX] = c & 0xffff;
 #endif
 		}
 	}
@@ -681,10 +683,10 @@ void gDPLoadBlock(u32 tile, u32 uls, u32 ult, u32 lrs, u32 dxt)
 	info.size = static_cast<u8>(gDP.textureImage.size);
 	info.loadType = LOADTYPE_BLOCK;
 
-	const u32 width = (lrs - uls + 1) & 0x0FFF;
+	const u32 width = (lrs - uls + 1);// & (0x1000 - 1);
 	u32 bytes = width << gDP.loadTile->size >> 1;
-	if ((bytes & 7) != 0)
-		bytes = (bytes & (~7U)) + 8;
+	//if ((bytes & 7) != 0)
+	//	bytes = (bytes & (~7U)) + 8;
 
 	info.bytes = bytes;
 	word address = gDP.textureImage.address + ult * gDP.textureImage.bpl + (uls << gDP.textureImage.size >> 1);
@@ -740,12 +742,12 @@ void gDPLoadBlock(u32 tile, u32 uls, u32 ult, u32 lrs, u32 dxt)
 						goto end_dxt_test;
 					dxtCounter += dxt;
 				} while ((dxtCounter & 0x800) != 0);
-				DWordInterleaveWrap(reinterpret_cast<u32*>(TMEM), tmemAddr << 1, 0x3FF, line);
+				DWordInterleaveWrap(reinterpret_cast<u32*>(TMEM), tmemAddr << 1, LOAD_BLOCK32_MASK, line);
 				tmemAddr += line;
 				line = 0;
 			}
 			end_dxt_test:
-				DWordInterleaveWrap(reinterpret_cast<u32*>(TMEM), tmemAddr << 1, 0x3FF, line);
+				DWordInterleaveWrap(reinterpret_cast<u32*>(TMEM), tmemAddr << 1, LOAD_BLOCK32_MASK, line);
 		}
 	}
 
@@ -769,10 +771,10 @@ void gDPLoadTLUT( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
 	while (i < count) {
 		for (u16 j = 0; (j < 16) && (i < count); ++j, ++i) {
 #ifdef NATIVE
-			//dest[(destIdx | 0x0400) & 0x07FF] = *reinterpret_cast<u16*>(RDRAM + (address ^ 2));
+			//dest[(destIdx | LOAD_BLOCK32_MAX) & 0x07FF] = *reinterpret_cast<u16*>(RDRAM + (address ^ 2));
 			dest[(destIdx) & 0x07FF] = *reinterpret_cast<u16*>(RDRAM + (address));
 #else
-			dest[(destIdx | 0x0400) & 0x07FF] = swapword(*reinterpret_cast<u16*>(RDRAM + (address ^ 2)));
+			dest[(destIdx | LOAD_BLOCK32_MAX) & 0x07FF] = swapword(*reinterpret_cast<u16*>(RDRAM + (address ^ 2)));
 #endif
 			address += 2;
 			destIdx += 4;
