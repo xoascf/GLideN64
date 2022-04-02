@@ -13,6 +13,12 @@
 
 using namespace graphics;
 
+extern "C"
+{
+	bool gfx_filter_sepia_enabled();
+	float* gfx_filter_sepia_get();
+}
+
 PostProcessor::PostProcessor()
 	: m_pTextureOriginal(nullptr)
 {}
@@ -68,6 +74,10 @@ void PostProcessor::init()
 {
 	m_gammaCorrectionProgram.reset(gfxContext.createGammaCorrectionShader());
 	m_postprocessingList.emplace_front(std::mem_fn(&PostProcessor::_doGammaCorrection)); // std::mem_fn to fix compilation with VS 2013
+
+	m_sepiaProgram.reset(gfxContext.createSepiaShader());
+	m_postprocessingList.emplace_front(std::mem_fn(&PostProcessor::_doSepia));
+
 	if (config.video.fxaa != 0) {
 		m_FXAAProgram.reset(gfxContext.createFXAAShader());
 		m_postprocessingList.emplace_front(std::mem_fn(&PostProcessor::_doFXAA));
@@ -157,6 +167,19 @@ FrameBuffer * PostProcessor::_doGammaCorrection(FrameBuffer * _pBuffer)
 		return _pBuffer;
 
 	return _doPostProcessing(_pBuffer, m_gammaCorrectionProgram.get());
+}
+
+FrameBuffer* PostProcessor::_doSepia(FrameBuffer* _pBuffer)
+{
+	if(_pBuffer == nullptr)
+		return nullptr;
+
+	if(!gfx_filter_sepia_enabled())
+		return _pBuffer;
+
+	m_sepiaProgram->setColor(gfx_filter_sepia_get());
+
+	return _doPostProcessing(_pBuffer, m_sepiaProgram.get());
 }
 
 FrameBuffer * PostProcessor::_doFXAA(FrameBuffer * _pBuffer)

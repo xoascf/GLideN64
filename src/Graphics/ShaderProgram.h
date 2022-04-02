@@ -31,4 +31,10 @@ namespace graphics {
 	public:
 		virtual void setTextColor(float * _color) = 0;
 	};
+
+	class ColorShaderProgram : public ShaderProgram
+	{
+		public:
+		virtual void setColor(float* _color) = 0;
+	};
 }

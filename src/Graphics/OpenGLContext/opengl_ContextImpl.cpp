@@ -470,6 +470,11 @@ graphics::ShaderProgram * ContextImpl::createGammaCorrectionShader()
 	return m_specialShadersFactory->createGammaCorrectionShader();
 }
 
+graphics::ColorShaderProgram* ContextImpl::createSepiaShader()
+{
+	return m_specialShadersFactory->createSepiaShader();
+}
+
 graphics::ShaderProgram * ContextImpl::createFXAAShader()
 {
 	return m_specialShadersFactory->createFXAAShader();

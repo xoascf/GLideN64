@@ -360,6 +360,13 @@ ShaderProgram * Context::createGammaCorrectionShader()
 	return m_impl->createGammaCorrectionShader();
 }
 
+ColorShaderProgram* Context::createSepiaShader()
+{
+	if(!m_impl)
+		return nullptr;
+	return m_impl->createSepiaShader();
+}
+
 ShaderProgram * Context::createFXAAShader()
 {
 	if (!m_impl) return nullptr;

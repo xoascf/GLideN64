@@ -16,6 +16,34 @@
 #include "glsl_FXAA.h"
 #include "glsl_Utils.h"
 
+static float gSepiaColor[4] = {0};
+
+extern "C"
+{
+	void gfx_filter_sepia_set(u8 r, u8 g, u8 b, u8 a) noexcept
+	{
+		gSepiaColor[0] = r / 255.0f;
+		gSepiaColor[1] = g / 255.0f;
+		gSepiaColor[2] = b / 255.0f;
+		gSepiaColor[3] = a / 255.0f;
+	}
+
+	void gfx_filter_sepia_disable() noexcept
+	{
+		gSepiaColor[3] = 0.0f;
+	}
+
+	bool gfx_filter_sepia_enabled()
+	{
+		return gSepiaColor[3] > 0.0f;
+	}
+
+	float* gfx_filter_sepia_get()
+	{
+		return gSepiaColor;
+	}
+}
+
 namespace glsl {
 
 	/*---------------VertexShaderPart-------------*/
@@ -548,6 +576,25 @@ namespace glsl {
 		}
 	};
 
+	class Sepia : public ShaderPart
+	{
+		public:
+		Sepia(const opengl::GLInfo& _glinfo)
+		{
+			m_part = "IN mediump vec2 vTexCoord0;													\n"
+				 "uniform sampler2D uTex0;													\n"
+				 "uniform lowp vec4 uColor;									\n"
+				 "OUT lowp vec4 fragColor;													\n"
+				 "void main()																\n"
+				 "{																			\n"
+				 "    fragColor = texture2D(uTex0, vTexCoord0);								\n"
+				 "    float gray = (fragColor.r + fragColor.g + fragColor.b) / 3.0;                     \n"
+				 "    vec3 sepia = vec3(gray);                     \n"
+				 "    sepia *= vec3(uColor.r, uColor.g, uColor.b);                     \n"
+				 "    fragColor.rgb = mix(fragColor.rgb, sepia, uColor.a);								\n";
+		}
+	};
+
 	/*---------------TextDrawerShaderPart-------------*/
 
 	class TextDraw : public ShaderPart
@@ -903,6 +950,40 @@ namespace glsl {
 		}
 	};
 
+	typedef SpecialShader<VertexShaderTexturedRect, Sepia, graphics::ColorShaderProgram> SepiaShaderBase;
+
+	class SepiaShader : public SepiaShaderBase
+	{
+		public:
+		SepiaShader(const opengl::GLInfo& _glinfo, opengl::CachedUseProgram* _useProgram, const ShaderPart* _vertexHeader, const ShaderPart* _fragmentHeader, const ShaderPart* _fragmentEnd) :
+		    SepiaShaderBase(_glinfo, _useProgram, _vertexHeader, _fragmentHeader, _fragmentEnd)
+		{
+			m_useProgram->useProgram(m_program);
+			const int texLoc = glGetUniformLocation(GLuint(m_program), "uTex0");
+			glUniform1i(texLoc, 0);
+			m_colorLoc = glGetUniformLocation(GLuint(m_program), "uColor");
+			glUniform4fv(m_colorLoc, 1, gSepiaColor);
+			m_useProgram->useProgram(graphics::ObjectHandle::null);
+			gfx_filter_sepia_disable();
+			memset(m_lastColor, 0, sizeof(m_lastColor));
+		}
+
+		void setColor(float* _color) override
+		{
+			if(memcmp(_color, m_lastColor, sizeof(m_lastColor)))
+			{
+				m_useProgram->useProgram(m_program);
+				glUniform4fv(m_colorLoc, 1, _color);
+				m_useProgram->useProgram(graphics::ObjectHandle::null);
+				memcpy(m_lastColor, _color, sizeof(m_lastColor));
+			}
+		}
+
+		private:
+		int m_colorLoc;
+		float m_lastColor[4];
+	};
+
 	/*---------------TexrectDrawerShader-------------*/
 
 	typedef SpecialShader<VertexShaderTexturedRect, TextDraw, graphics::TextDrawerShaderProgram> TextDrawerShaderBase;
@@ -997,6 +1078,11 @@ namespace glsl {
 	graphics::ShaderProgram * SpecialShadersFactory::createGammaCorrectionShader() const
 	{
 		return new GammaCorrectionShader(m_glinfo, m_useProgram, m_vertexHeader, m_fragmentHeader, m_fragmentEnd);
+	}
+
+	graphics::ColorShaderProgram* SpecialShadersFactory::createSepiaShader() const
+	{
+		return new SepiaShader(m_glinfo, m_useProgram, m_vertexHeader, m_fragmentHeader, m_fragmentEnd);
 	}
 
 	graphics::ShaderProgram * SpecialShadersFactory::createFXAAShader() const

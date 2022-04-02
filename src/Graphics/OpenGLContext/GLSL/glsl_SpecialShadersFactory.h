@@ -38,6 +38,8 @@ namespace glsl {
 
 		graphics::ShaderProgram * createGammaCorrectionShader() const;
 
+		graphics::ColorShaderProgram* createSepiaShader() const;
+
 		graphics::ShaderProgram * createFXAAShader() const;
 
 		graphics::TextDrawerShaderProgram * createTextDrawerShader() const;

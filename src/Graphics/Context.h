@@ -248,6 +248,8 @@ namespace graphics {
 
 		ShaderProgram * createGammaCorrectionShader();
 
+		ColorShaderProgram* createSepiaShader();
+
 		ShaderProgram * createFXAAShader();
 
 		TextDrawerShaderProgram * createTextDrawerShader();
