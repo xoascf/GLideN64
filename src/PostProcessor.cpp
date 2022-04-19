@@ -88,6 +88,7 @@ void PostProcessor::destroy()
 {
 	m_postprocessingList.clear();
 	m_gammaCorrectionProgram.reset();
+	m_sepiaProgram.reset();
 	m_FXAAProgram.reset();
 	m_pResultBuffer.reset();
 }
