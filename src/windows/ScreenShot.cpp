@@ -3,11 +3,19 @@
 #include "Config.h"
 #include "../GLideNHQ/inc/png.h"
 
+#if defined(OS_WINDOWS)
 void write_png_file(const wchar_t * file_name, int width, int height, const uint8_t *buffer)
 {
 #pragma warning(disable: 4996)
 	FILE *fp = _wfopen(file_name, L"wb");
 #pragma warning(default: 4996)
+
+
+#else
+static void write_png_file(const char * file_name, int width, int height, const uint8_t *buffer)
+{
+	FILE *fp = fopen((const char*)file_name, "wb");
+#endif
 	if (!fp) return;
 
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -76,6 +84,7 @@ void write_png_file(const wchar_t * file_name, int width, int height, const uint
 	fclose(fp);
 }
 
+#ifndef OS_LINUX
 void SaveScreenshot(const wchar_t * _folder, const char * _name, int _width, int _height, const unsigned char * _data)
 {
 	const wchar_t * fileExt = L"png";
@@ -121,3 +130,18 @@ void SaveScreenshot(const wchar_t * _folder, const char * _name, int _width, int
 
 	write_png_file(fileName, _width, _height, _data);
 }
+#else
+void SaveScreenshot(const char * _folder, const char * _name, int _width, int _height, const unsigned char * _data)
+{
+	const char * fileExt = "png";
+	char fileName[256];
+	int i= 0;
+	std::string romName = std::string(_name);
+	for (size_t i = 0, n = romName.size(); i < n; i++) {
+		if (romName[i] == L' ') romName[i] = L'_';
+		if (romName[i] == L':') romName[i] = L';';
+	}
+	snprintf(fileName, 256, "GLideN64_%ls_%03i.%s", romName.c_str(), i, fileExt);
+	write_png_file(fileName, _width, _height, _data);
+}
+#endif

@@ -1,16 +1,24 @@
 #include "osal_keys.h"
 
-#include <linux/limits.h>
-#include <linux/input.h>
+#include <limits.h>
 #include <dirent.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
+#include <linux/input.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifndef _WIN32
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#endif
+
 
 static const unsigned char LINUX_HID_TO_NATIVE[256] = {
 	255, 255, 255, 255, KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, 
