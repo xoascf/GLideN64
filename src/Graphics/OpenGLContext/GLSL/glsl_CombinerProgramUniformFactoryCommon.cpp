@@ -650,7 +650,7 @@ public:
 
 	void update(bool _force) override
 	{
-		f32 offset = gfxContext.isEnabled(graphics::enable::POLYGON_OFFSET_FILL) ? 0.003f : 0.0f;
+		f32 offset = gfxContext.polygonOffsetEnabled() ? 0.003f : 0.0f;
 		uPolygonOffset.set(offset, _force);
 	}
 

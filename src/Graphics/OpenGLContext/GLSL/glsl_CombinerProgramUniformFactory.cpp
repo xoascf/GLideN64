@@ -86,13 +86,13 @@ void CombinerProgramUniformFactory::buildUniforms(GLuint _program,
 		_addDepthSource(_program, _uniforms);
 
 	if (config.generalEmulation.enableFragmentDepthWrite != 0 ||
-		config.frameBufferEmulation.N64DepthCompare != Config::dcDisable)
+		config.frameBufferEmulation.N64DepthCompare != Config::dcDisable) {
 		_addRenderTarget(_program, _uniforms);
-
-	if (m_glInfo.isGLESX && m_glInfo.noPerspective) {
-		_addClampMode(_program, _uniforms);
 		_addPolygonOffset(_program, _uniforms);
 	}
+
+	if (m_glInfo.isGLESX && m_glInfo.noPerspective)
+		_addClampMode(_program, _uniforms);
 
 	_addScreenCoordsScale(_program, _uniforms);
 

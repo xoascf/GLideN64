@@ -720,13 +720,13 @@ public:
 	{
 		if (!_glinfo.isGLES2) {
 			m_part =
+				"uniform lowp float uPolygonOffset;	\n"
 				"highp float writeDepth();\n";
 			;
 		}
 		if (_glinfo.isGLESX &&  _glinfo.noPerspective) {
 			m_part =
 				"noperspective IN highp float vZCoord;	\n"
-				"uniform lowp float uPolygonOffset;	\n"
 				"uniform lowp int uClampMode; \n"
 				+ m_part
 				;
@@ -1114,18 +1114,18 @@ public:
 						} else if (config.generalEmulation.enableClipping != 0) {
 							m_part +=
 							"  highp float FragDepth = (uDepthSource != 0) ? uPrimDepth :								\n"
-							"      clamp(8.0 * (gl_FragCoord.z * 2.0 - 1.0) * uDepthScale.s + uDepthScale.t, 0.0, 1.0);	\n"
+							"      clamp(8.0 * ((gl_FragCoord.z * 2.0 - 1.0) - uPolygonOffset) * uDepthScale.s + uDepthScale.t, 0.0, 1.0);	\n"
 							;
 						} else {
 							m_part +=
 							"  highp float FragDepth = (uDepthSource != 0) ? uPrimDepth :								\n"
-							"            clamp((gl_FragCoord.z * 2.0 - 1.0) * uDepthScale.s + uDepthScale.t, 0.0, 1.0);	\n"
+							"            clamp(((gl_FragCoord.z * 2.0 - 1.0) - uPolygonOffset) * uDepthScale.s + uDepthScale.t, 0.0, 1.0);	\n"
 							;
 						}
 					} else {
 						m_part +=
 							"  highp float FragDepth = (uDepthSource != 0) ? uPrimDepth :								\n"
-							"            clamp((gl_FragCoord.z * 2.0 - 1.0) * uDepthScale.s + uDepthScale.t, 0.0, 1.0);	\n"
+							"            clamp(((gl_FragCoord.z * 2.0 - 1.0) - uPolygonOffset) * uDepthScale.s + uDepthScale.t, 0.0, 1.0);	\n"
 						;
 					}
 					m_part +=
