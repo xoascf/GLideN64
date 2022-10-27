@@ -8,6 +8,7 @@
 #include <DisplayWindow.h>
 #include <windows/ScreenShot.h>
 #include <Graphics/OpenGLContext/ThreadedOpenGl/opengl_Wrapper.h>
+#include "GL/glext.h"
 
 
 bool isMemoryWritable(void * ptr, size_t byteCount) {

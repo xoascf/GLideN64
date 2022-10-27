@@ -3,6 +3,7 @@
 #include <GBI.h>
 #include <Graphics/Context.h>
 #include "opengl_ColorBufferReaderWithEGLImage.h"
+#include <EGL/eglext.h>
 
 using namespace opengl;
 using namespace graphics;

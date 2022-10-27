@@ -2,6 +2,10 @@
 #include "glsl_CombinerProgramBuilderAccurate.h"
 #include "glsl_CombinerProgramUniformFactoryAccurate.h"
 
+#ifdef OS_ANDROID
+#include <memory>
+#endif
+
 namespace {
 using namespace glsl;
 
