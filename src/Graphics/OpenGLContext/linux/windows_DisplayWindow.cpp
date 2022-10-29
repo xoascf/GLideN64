@@ -44,7 +44,7 @@ DisplayWindow & DisplayWindow::get()
 
 bool DisplayWindowWindows::_start()
 {
-	FunctionWrapper::setThreadedMode(config.video.threadedVideo);
+	FunctionWrapper::setThreadedMode(false);
 
 	FunctionWrapper::windowsStart();
 	return _resizeWindow();
