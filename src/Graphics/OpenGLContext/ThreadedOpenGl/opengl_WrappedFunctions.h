@@ -4420,13 +4420,8 @@ public:
 
 	void commandToExecute() override
 	{
-#ifdef OS_ANDROID
 		ptrTextureStorage2DMultisample(m_texture, m_target, m_samples, m_internalformat, m_width, m_height,
 			m_fixedsamplelocations);
-#else
-		ptrTextureStorage2DMultisample(m_texture, m_target, m_samples, m_internalformat, m_width, m_height,
-			m_fixedsamplelocations);
-#endif
 	}
 
 private:

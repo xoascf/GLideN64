@@ -16,9 +16,6 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#if defined(OS_ANDROID)
-#endif
-
 #elif defined(OS_MAC_OS_X)
 #include <OpenGL/OpenGL.h>
 #include <stddef.h>
@@ -51,7 +48,7 @@ typedef double GLdouble;
 #endif
 
 #define GL_LUMINANCE 0x1909
-//#include <GL/glext.h>
+#include <GL/glext.h>
 #include <stdexcept>
 #include <sstream>
 #include "Log.h"
@@ -67,11 +64,6 @@ typedef void (APIENTRYP PFNGLDRAWELEMENTSPROC) (GLenum mode, GLsizei count, GLen
 typedef void (APIENTRYP PFNGLDELETETEXTURESPROC) (GLsizei n, const GLuint *textures);
 typedef void (APIENTRYP PFNGLGENTEXTURESPROC) (GLsizei n, GLuint *textures);
 typedef void (APIENTRYP PFNGLCOPYTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
-#endif
-
-#if defined(OS_ANDROID)
-typedef void (APIENTRYP PFNGLTEXTURESTORAGE2DMULTISAMPLEEXTPROC) (GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
-typedef void (APIENTRYP PFNGLTEXTUREBARRIERNVPROC) (void);
 #endif
 
 extern PFNGLBLENDFUNCPROC ptrBlendFunc;
@@ -201,11 +193,7 @@ extern PFNGLPROGRAMPARAMETERIPROC ptrProgramParameteri;
 extern PFNGLTEXSTORAGE2DPROC ptrTexStorage2D;
 extern PFNGLTEXTURESTORAGE2DPROC ptrTextureStorage2D;
 extern PFNGLTEXTURESUBIMAGE2DPROC ptrTextureSubImage2D;
-#ifdef OS_ANDROID
 extern PFNGLTEXTURESTORAGE2DMULTISAMPLEEXTPROC ptrTextureStorage2DMultisample;
-#else
-extern PFNGLTEXTURESTORAGE2DMULTISAMPLEEXTPROC ptrTextureStorage2DMultisample;
-#endif
 extern PFNGLTEXTUREPARAMETERIPROC ptrTextureParameteri;
 extern PFNGLTEXTUREPARAMETERFPROC ptrTextureParameterf;
 extern PFNGLCREATETEXTURESPROC ptrCreateTextures;
@@ -215,11 +203,7 @@ extern PFNGLNAMEDFRAMEBUFFERTEXTUREPROC ptrNamedFramebufferTexture;
 extern PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC ptrDrawRangeElementsBaseVertex;
 extern PFNGLFLUSHMAPPEDBUFFERRANGEPROC ptrFlushMappedBufferRange;
 extern PFNGLTEXTUREBARRIERPROC ptrTextureBarrier;
-#ifdef OS_ANDROID
 extern PFNGLTEXTUREBARRIERNVPROC ptrTextureBarrierNV;
-#else
-extern PFNGLTEXTUREBARRIERNVPROC ptrTextureBarrierNV;
-#endif
 extern PFNGLCLEARBUFFERFVPROC ptrClearBufferfv;
 extern PFNGLENABLEIPROC ptrEnablei;
 extern PFNGLDISABLEIPROC ptrDisablei;
