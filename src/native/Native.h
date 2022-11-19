@@ -53,7 +53,7 @@ typedef struct {
 } OSTask_t; // size = 0x40
 
 //Copied over from OOT - needs cleanup
-struct Gfx;
+union Gfx;
 struct OSThread;
 typedef void* OSMesg;
 

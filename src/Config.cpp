@@ -29,6 +29,7 @@ void Config::resetToDefaults()
 	video.verticalSync = 0;
 
 #if defined(OS_ANDROID)
+	//static_assert(false, "This is where threaded rendering is turned on.");
 	video.threadedVideo = 1;
 #else
 	video.threadedVideo = 0;

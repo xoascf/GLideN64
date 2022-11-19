@@ -5,9 +5,7 @@
 #include <Graphics/OpenGLContext/GLFunctions.h>
 
 #ifdef WITH_IMGUI
-#include "imgui.h"
-#include "backends/imgui_impl_win32.h"
-#include "backends/imgui_impl_opengl3.h"
+#include "Graphics/imgui/OOT_Imgui.h"
 #endif
 #include <functional>
 #include <vector>
@@ -44,13 +42,7 @@ bool WindowsWGL::start()
 		hWnd = GetActiveWindow();
 
 #ifdef WITH_IMGUI
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplWin32_Init(hWnd);
+	OOT_Imgui::CreateImguiContext((void*)hWnd, nullptr);
 #endif
 
 	if ((hDC = GetDC(hWnd)) == NULL) {
@@ -85,8 +77,7 @@ bool WindowsWGL::start()
 	initGLFunctions();
 
 #ifdef WITH_IMGUI
-	const char* glsl_version = "#version 130";
-	ImGui_ImplOpenGL3_Init(glsl_version);
+	OOT_Imgui::InitOpenGL();
 #endif
 
 	PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
@@ -144,9 +135,7 @@ bool WindowsWGL::start()
 void WindowsWGL::stop()
 {
 #ifdef WITH_IMGUI
-	ImGui_ImplWin32_Shutdown();
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui::DestroyContext();
+	OOT_Imgui::Shutdown();
 #endif
 
 	wglMakeCurrent(NULL, NULL);
@@ -162,35 +151,10 @@ void WindowsWGL::stop()
 	}
 }
 
-#ifdef WITH_IMGUI
-using ImguiCommandList = std::vector< std::function<void(void)>>;
-ImguiCommandList gImguiCommandList;
-
-void EnqueueImguiCommand(std::function<void(void)> newCommand)
-{
-	gImguiCommandList.push_back(newCommand);
-}
-#endif
-
 void WindowsWGL::swapBuffers()
 {
 #ifdef WITH_IMGUI
-	ImGui_ImplWin32_NewFrame();
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui::NewFrame();
-
-	for (auto& command : gImguiCommandList)
-	{
-		std::invoke(command);
-	}
-	gImguiCommandList.clear();
-
-	// Rendering
-	ImGui::Render();
-	const ImGuiIO& io = ImGui::GetIO();
-	glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	OOT_Imgui::SwapBuffers();
 #endif
 
 	if (hDC == NULL)

@@ -19,6 +19,10 @@
 #endif
 //#include <GL/gl.h>
 
+#ifdef WITH_IMGUI
+#include "Graphics/Imgui/OOT_Imgui.h"
+#endif
+
 static SDL_Window *_wind = NULL;
 void WindowsWGL_GrabWindow(void *wind) {
 	_wind = (SDL_Window*)wind;
@@ -27,15 +31,26 @@ void WindowsWGL_GrabWindow(void *wind) {
 bool WindowsWGL::start()
 {
 	initGLFunctions();
+
+#ifdef WITH_IMGUI
+	OOT_Imgui::InitOpenGL();
+#endif
+
 	return true;
 }
 
 void WindowsWGL::stop()
 {
-	/* Do Nothing. */
+#ifdef WITH_IMGUI
+	OOT_Imgui::Shutdown();
+#endif
 }
 
 void WindowsWGL::swapBuffers()
 {
+#ifdef WITH_IMGUI
+	OOT_Imgui::SwapBuffers();
+#endif
+
 	SDL_GL_SwapWindow(_wind);
 }
