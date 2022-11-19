@@ -45,7 +45,7 @@ DisplayWindow & DisplayWindow::get()
 bool DisplayWindowWindows::_start()
 {
 	//static_assert(false, "This is where threaded rendering was turned on.");
-	FunctionWrapper::setThreadedMode(false);
+	FunctionWrapper::setThreadedMode(config.video.threadedVideo);
 
 	FunctionWrapper::windowsStart();
 	return _resizeWindow();

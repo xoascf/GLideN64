@@ -28,8 +28,7 @@ void Config::resetToDefaults()
 	video.maxMultiSampling = 0;
 	video.verticalSync = 0;
 
-#if defined(OS_ANDROID)
-	//static_assert(false, "This is where threaded rendering is turned on.");
+#if defined(OS_ANDROID) && 0 // Threaded mode doesn't work on android or Win32
 	video.threadedVideo = 1;
 #else
 	video.threadedVideo = 0;
