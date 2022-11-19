@@ -5,9 +5,7 @@
 
 #include "imgui.h"
 
-#ifndef _WIN32
 #include "backends/imgui_impl_sdl.h"
-#endif
 
 namespace OOT_Imgui
 {
