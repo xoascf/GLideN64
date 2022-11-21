@@ -23,10 +23,9 @@
 #include "DisplayWindow.h"
 #include <Graphics/Context.h>
 
-#ifdef NATIVE
+#if defined(NATIVE) && !defined(__clang__)
 #define RDRAM ((u8*)0)
 #endif
-
 using namespace std;
 
 gDPInfo gDP;

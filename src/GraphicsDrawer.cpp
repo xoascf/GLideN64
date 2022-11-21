@@ -26,7 +26,7 @@
 #include "Log.h"
 #include "RenderingDebugHelpers.h"
 
-#ifdef NATIVE
+#if defined(NATIVE) && !defined(__clang__)
 #define RDRAM ((u8*)0)
 #endif
 

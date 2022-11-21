@@ -11,7 +11,7 @@
 #include "3DMath.h"
 #include "DisplayWindow.h"
 
-#ifdef NATIVE
+#if defined(NATIVE) && !defined(__clang__)
 #define RDRAM ((u8*)0)
 #define DMEM ((u8*)0)
 #endif
