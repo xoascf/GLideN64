@@ -1,7 +1,7 @@
 #ifndef RENDERING_TOGGLES_H
 #define RENDERING_TOGGLES_H
 
-#include "ultra64/types.h"
+#include "Types.h"
 
 namespace RenderingToggles {
 	bool& GetMapMemory(); 

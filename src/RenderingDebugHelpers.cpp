@@ -1,5 +1,8 @@
 #include "RenderingDebugHelpers.h"
+
+#ifdef WITH_IMGUI
 #include <imgui_commands.h>
+#endif
 
 #ifdef WITH_IMGUI
 void RenderDebugHelpers::DrawToggleCheckboxes()
