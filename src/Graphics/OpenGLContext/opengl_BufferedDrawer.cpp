@@ -4,6 +4,8 @@
 #include "opengl_Attributes.h"
 #include "opengl_BufferedDrawer.h"
 
+#include "RenderingDebugHelpers.h"
+
 using namespace graphics;
 using namespace opengl;
 
@@ -15,6 +17,20 @@ const GLbitfield BufferedDrawer::m_bufMapBits = GL_MAP_WRITE_BIT | GL_MAP_PERSIS
 const GLbitfield BufferedDrawer::m_bufAccessBits = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT;
 const GLbitfield BufferedDrawer::m_bufMapBits = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
 #endif
+
+namespace RenderingToggles {
+	static bool bDrawTriangles = true;
+
+	static bool bMapMemory = true;
+}
+
+bool& RenderingToggles::GetMapMemory() {
+	return bMapMemory;
+}
+
+bool& RenderingToggles::GetDrawTriangles() {
+	return bDrawTriangles;
+}
 
 BufferedDrawer::BufferedDrawer(const GLInfo & _glinfo, CachedVertexAttribArray * _cachedAttribArray, CachedBindBuffer * _bindBuffer)
 : m_glInfo(_glinfo)
@@ -88,7 +104,9 @@ void BufferedDrawer::_updateBuffer(Buffer & _buffer, u32 _count, u32 _dataSize, 
 	}
 
 	if (m_glInfo.bufferStorage) {
-		memcpy(&_buffer.data[_buffer.offset], _data, _dataSize);
+		if (RenderingToggles::bMapMemory)	{
+			memcpy(&_buffer.data[_buffer.offset], _data, _dataSize);
+		}
 	} else {
 		m_bindBuffer->bind(Parameter(_buffer.type), ObjectHandle(_buffer.handle));
 		void* buffer_pointer = glMapBufferRange(_buffer.type, _buffer.offset, _dataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
@@ -132,7 +150,6 @@ void BufferedDrawer::_updateRectBuffer(const graphics::Context::DrawRectParamete
 	m_rectBufferOffsets[crc] = buffer.pos;
 }
 
-
 void BufferedDrawer::drawRects(const graphics::Context::DrawRectParameters & _params)
 {
 	_updateRectBuffer(_params);
@@ -140,7 +157,10 @@ void BufferedDrawer::drawRects(const graphics::Context::DrawRectParameters & _pa
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::texcoord0, _params.texrect);
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::texcoord1, _params.texrect);
 
-	glDrawArrays(GLenum(_params.mode), m_rectsBuffers.vbo.pos - _params.verticesCount, _params.verticesCount);
+	if (RenderingToggles::bDrawTriangles)
+	{
+		glDrawArrays(GLenum(_params.mode), m_rectsBuffers.vbo.pos - _params.verticesCount, _params.verticesCount);
+	}
 }
 
 void BufferedDrawer::_convertFromSPVertex(bool _flatColors, u32 _count, const SPVertex * _data)
@@ -205,7 +225,9 @@ void BufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParamete
 
 	if (config.frameBufferEmulation.N64DepthCompare != Config::dcCompatible) {
 		if (_params.elements == nullptr) {
-			glDrawArrays(GLenum(_params.mode), m_trisBuffers.vbo.pos - _params.verticesCount, _params.verticesCount);
+			if (RenderingToggles::bDrawTriangles) {
+				glDrawArrays(GLenum(_params.mode), m_trisBuffers.vbo.pos - _params.verticesCount, _params.verticesCount);
+			}
 			return;
 		}
 
@@ -220,13 +242,17 @@ void BufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParamete
 		const GLint vboStartPos = m_trisBuffers.vbo.pos - _params.verticesCount;
 		if (_params.mode != graphics::drawmode::TRIANGLES) {
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-			glDrawArrays(GLenum(_params.mode), m_trisBuffers.vbo.pos - _params.verticesCount, _params.verticesCount);
+			if (RenderingToggles::bDrawTriangles) {
+				glDrawArrays(GLenum(_params.mode), m_trisBuffers.vbo.pos - _params.verticesCount, _params.verticesCount);
+			}
 			return;
 		}
 
 		for (GLint i = 0; i < GLint(_params.verticesCount); i += 3) {
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-			glDrawArrays(GLenum(_params.mode), vboStartPos + i, 3);
+			if (RenderingToggles::bDrawTriangles) {
+				glDrawArrays(GLenum(_params.mode), vboStartPos + i, 3);
+			}
 		}
 		return;
 	}

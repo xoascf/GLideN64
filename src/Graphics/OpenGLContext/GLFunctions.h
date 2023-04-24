@@ -15,10 +15,21 @@
 #include <GL/glcorearb.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+
 #elif defined(OS_MAC_OS_X)
 #include <OpenGL/OpenGL.h>
 #include <stddef.h>
 #include <OpenGL/gl3.h>
+
+#elif defined(OS_ANDROID)
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <android/hardware_buffer_jni.h>
+// Add missing type defintions for android
+typedef double GLclampd;
+typedef double GLdouble;
 
 #elif defined(OS_IOS)
 #include <OpenGLES/ES3/gl.h>

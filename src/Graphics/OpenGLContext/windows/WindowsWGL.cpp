@@ -4,6 +4,12 @@
 #include <GLideN64.h>
 #include <Graphics/OpenGLContext/GLFunctions.h>
 
+#ifdef WITH_IMGUI
+#include "Graphics/imgui/OOT_Imgui.h"
+#endif
+#include <functional>
+#include <vector>
+
 HGLRC WindowsWGL::hRC = NULL;
 HDC WindowsWGL::hDC = NULL;
 
@@ -35,6 +41,10 @@ bool WindowsWGL::start()
 	if (hWnd == NULL)
 		hWnd = GetActiveWindow();
 
+#ifdef WITH_IMGUI
+	OOT_Imgui::CreateImguiContext((void*)hWnd, nullptr);
+#endif
+
 	if ((hDC = GetDC(hWnd)) == NULL) {
 		MessageBoxW(hWnd, L"Error while getting a device context!", pluginNameW, MB_ICONERROR | MB_OK);
 		return false;
@@ -65,6 +75,10 @@ bool WindowsWGL::start()
 	}
 
 	initGLFunctions();
+
+#ifdef WITH_IMGUI
+	OOT_Imgui::InitOpenGL();
+#endif
 
 	PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
 		(PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
@@ -120,6 +134,10 @@ bool WindowsWGL::start()
 
 void WindowsWGL::stop()
 {
+#ifdef WITH_IMGUI
+	OOT_Imgui::Shutdown();
+#endif
+
 	wglMakeCurrent(NULL, NULL);
 
 	if (hRC != NULL) {
@@ -135,8 +153,13 @@ void WindowsWGL::stop()
 
 void WindowsWGL::swapBuffers()
 {
+#ifdef WITH_IMGUI
+	OOT_Imgui::SwapBuffers();
+#endif
+
 	if (hDC == NULL)
 		SwapBuffers(wglGetCurrentDC());
 	else
 		SwapBuffers(hDC);
+
 }

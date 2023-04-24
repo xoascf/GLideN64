@@ -11,6 +11,11 @@
 #include "FrameBufferInfo.h"
 #include <wchar.h>
 #include "Settings.h"
+#include "RenderingDebugHelpers.h"
+
+#ifdef WITH_IMGUI
+#include "imgui_commands.h"
+#endif
 
 #define START_WIDTH 1280
 #define START_HEIGHT 720
@@ -19,6 +24,14 @@ static u64 g_originalWidth = START_WIDTH;//Size set by the end-user
 static u64 g_width  = START_WIDTH;//Current size
 static u64 g_height = START_HEIGHT;
 static bool highres_hts = true;
+
+namespace RenderingToggles {
+	static bool bRunRSP = true;
+}
+
+bool& RenderingToggles::GetRunRSP() {
+	return bRunRSP;
+}
 
 extern "C" {
     u64 gfx_width()
@@ -90,6 +103,16 @@ SP_STATUS = new u32;
 }
 
 N64Regs::~N64Regs() {
+}
+
+namespace RenderTiming
+{
+	static u64 gLastRenderMs = 0;
+}
+
+u64 RenderTiming::GetLastRenderMs()
+{
+	return gLastRenderMs;
 }
 
 extern "C"
@@ -203,8 +226,12 @@ extern "C" {
         {
             return;
         }
-        RSP_ProcessDList(task->data_ptr, task->data_size, task->ucode_boot, task->ucode_data, task->ucode_size);
+		const auto now = std::chrono::high_resolution_clock::now();
+
+		if (RenderingToggles::bRunRSP)
+			RSP_ProcessDList(task->data_ptr, task->data_size, task->ucode_boot, task->ucode_data, task->ucode_size);
         api().UpdateScreen();
+		RenderTiming::gLastRenderMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - now).count();
         //Sleep(30);
     }
 

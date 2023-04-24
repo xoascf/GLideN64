@@ -24,8 +24,9 @@
 #include "RDP.h"
 #include "VI.h"
 #include "Log.h"
+#include "RenderingDebugHelpers.h"
 
-#ifdef NATIVE
+#if defined(NATIVE) && !defined(__clang__)
 #define RDRAM ((u8*)0)
 #endif
 
@@ -645,8 +646,19 @@ void GraphicsDrawer::_updateTextures() const
 	gSP.changed &= ~(CHANGED_TEXTURE);
 }
 
+namespace RenderingToggles {
+	static bool bUpdateStates = true;
+}
+
+bool& RenderingToggles::GetUpdateStates()  {
+	return bUpdateStates;
+}
+
 void GraphicsDrawer::_updateStates(DrawingState _drawingState) const
 {
+	if (!RenderingToggles::bUpdateStates)
+		return;
+
 	CombinerInfo & cmbInfo = CombinerInfo::get();
 	cmbInfo.setPolygonMode(_drawingState);
 	cmbInfo.update();

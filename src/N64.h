@@ -46,15 +46,17 @@ struct N64Regs
 
 extern N64Regs REG;
 extern u8 *HEADER;
-#ifdef NATIVE
+
+#if defined(NATIVE) && !defined(__clang__)
 #define RDRAM ((u8*)0)
 #define DMEM ((u8*)0)
 #define IMEM ((u8*)0)
 #else
-extern u8 *DMEM;
-extern u8 *IMEM;
-extern u8 *RDRAM;
+extern u8* DMEM;
+extern u8* IMEM;
+extern u8* RDRAM;
 #endif
+
 extern u64 TMEM[TMEM_SIZE];
 extern word RDRAMSize;
 extern bool ConfigOpen;

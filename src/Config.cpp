@@ -30,7 +30,7 @@ void Config::resetToDefaults()
 	video.verticalSync = 0;
 	video.deviceName[0] = L'\0';
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && 0 // Threaded mode doesn't work on android or Win32
 	video.threadedVideo = 1;
 #else
 	video.threadedVideo = 0;

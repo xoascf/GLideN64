@@ -8,6 +8,7 @@
 #include <DisplayWindow.h>
 #include <windows/ScreenShot.h>
 #include <Graphics/OpenGLContext/ThreadedOpenGl/opengl_Wrapper.h>
+#include "GL/glext.h"
 
 
 bool isMemoryWritable(void * ptr, size_t byteCount) {
@@ -43,6 +44,7 @@ DisplayWindow & DisplayWindow::get()
 
 bool DisplayWindowWindows::_start()
 {
+	//static_assert(false, "This is where threaded rendering was turned on.");
 	FunctionWrapper::setThreadedMode(config.video.threadedVideo);
 
 	FunctionWrapper::windowsStart();
