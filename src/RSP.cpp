@@ -388,6 +388,9 @@ void RSP_Init(const char* romName)
 	else if (strstr(RSP.romname, (const char *)"Extreme G 2") != nullptr ||
 		strstr(RSP.romname, (const char *)"\xb4\xb8\xbd\xc4\xd8\xb0\xd1\x47\x32") != nullptr)
 		config.generalEmulation.hacks |= hack_noDepthFrameBuffers;
+	else if (strstr(RSP.romname, (const char *)"PAPER MARIO") ||
+		strstr(RSP.romname, (const char *)"MARIO STORY"))
+		config.generalEmulation.hacks |= hack_paper_mario_subscreen;
 
 	api().FindPluginPath(RSP.pluginpath);
 

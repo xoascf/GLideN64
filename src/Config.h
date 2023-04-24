@@ -23,12 +23,14 @@ struct Config
 	struct
 	{
 		u32 fullscreen;
+		u32 borderless;
 		u32 windowedWidth, windowedHeight;
 		u32 fullscreenWidth, fullscreenHeight, fullscreenRefresh;
 		u32 fxaa;
 		u32 multisampling, maxMultiSampling;
 		u32 verticalSync;
 		u32 threadedVideo;
+		wchar_t deviceName[32];
 	} video;
 
 	struct
@@ -173,6 +175,7 @@ struct Config
 		u32 txForce16bpp;				// Force use 16bit color textures
 		u32 txCacheCompression;			// Zip textures cache
 		u32 txSaveCache;				// Save texture cache to hard disk
+		u32 txDump;                     // Dump textures
 
 		u32 txEnhancedTextureFileStorage;	// Use file storage instead of memory cache for enhanced textures.
 		u32 txHiresTextureFileStorage;		// Use file storage instead of memory cache for hires textures.
@@ -258,6 +261,7 @@ struct Config
 #define hack_blurPauseScreen		(1<<2)  //Game copies frame buffer to depth buffer area, CPU blurs it. That image is used as background for pause screen.
 #define hack_clearAloneDepthBuffer	(1<<3)  //Force clear depth buffer if there is no frame buffer for it. Multiplayer in GE and PD.
 #define hack_StarCraftBackgrounds	(1<<4)  //StarCraft special check for frame buffer usage.
+#define hack_paper_mario_subscreen	(1<<5)  //Fix subscreen delay for Paper Mario
 #define hack_subscreen				(1<<6)  //Fix subscreen delay in Zelda OOT and Doubutsu no Mori
 #define hack_blastCorps				(1<<7)  //Blast Corps black polygons
 #define hack_rectDepthBufferCopyPD	(1<<8)  //Copy depth buffer only when game need it. Optimized for PD
